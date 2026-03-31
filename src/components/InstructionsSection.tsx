@@ -1,4 +1,5 @@
 import { Keyboard, Mouse, Download } from "lucide-react";
+import { Button } from "./ui/button";
 
 const Kbd = ({ children }: { children: React.ReactNode }) => (
   <kbd className="inline-block px-2 py-0.5 rounded bg-secondary text-secondary-foreground text-xs font-mono border">
@@ -11,10 +12,11 @@ const instructions = [
     icon: Keyboard,
     title: "Mode clavier",
     steps: [
-      <><Kbd>Ctrl</Kbd>+<Kbd>M</Kbd> pour activer l'extension</>,
+      <><Kbd>Ctrl</Kbd>+<Kbd>M</Kbd> pour activer l'extension (mode attente)</>,
+      <><Kbd>Tab</Kbd> pour naviguer entre les éléments</>,
       <><Kbd>Entrée</Kbd> pour coloriser l'élément focusé</>,
-      <><Kbd>Tab</Kbd> pour naviguer entre éléments</>,
-      <><Kbd>Échap.</Kbd> pour désactiver</>,
+      <>Si l'élément est activable (lien, bouton), un 2e <Kbd>Entrée</Kbd> l'active</>,
+      <><Kbd>Échap.</Kbd> pour revenir en attente ou désactiver</>,
     ],
   },
   {
@@ -23,11 +25,28 @@ const instructions = [
     steps: [
       <>Cliquer sur l'icône <span className="syllable-dot font-bold">A·</span> dans la barre d'outils</>,
       <>Cliquer sur un élément pour le coloriser</>,
-      <>Survoler les éléments pour les coloriser au passage</>,
+      <>Si l'élément est activable, un 2e clic l'active (lien, bouton…)</>,
+      <>Les éléments non activables restent colorisés</>,
       <><Kbd>Échap.</Kbd> pour revenir en mode attente</>,
     ],
   },
 ];
+
+const handleDownload = () => {
+  fetch("/colore-texte.zip")
+    .then((res) => {
+      if (!res.ok) throw new Error(`Échec du téléchargement : ${res.status}`);
+      return res.blob();
+    })
+    .then((blob) => {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "colore-texte.zip";
+      a.click();
+      URL.revokeObjectURL(a.href);
+    })
+    .catch((err) => alert(err.message));
+};
 
 const InstructionsSection = () => {
   return (
@@ -65,13 +84,17 @@ const InstructionsSection = () => {
       <div className="mt-8 rounded-xl border bg-highlight/30 p-6 text-center">
         <div className="flex items-center justify-center gap-3 mb-3">
           <Download className="w-5 h-5 text-primary" />
-          <h3 className="font-display font-semibold text-foreground">Installation</h3>
+          <h3 className="font-display font-semibold text-foreground">Télécharger & Installer</h3>
         </div>
-        <p className="text-sm text-muted-foreground font-body max-w-md mx-auto">
-          Extension Firefox — chargez le dossier <code className="px-1.5 py-0.5 rounded bg-secondary text-sm">extension/</code> via{" "}
+        <p className="text-sm text-muted-foreground font-body max-w-md mx-auto mb-4">
+          Extension Firefox — téléchargez le fichier ZIP puis chargez-le via{" "}
           <code className="px-1.5 py-0.5 rounded bg-secondary text-sm">about:debugging</code> →
           « Charger un module temporaire » → sélectionner <code className="px-1.5 py-0.5 rounded bg-secondary text-sm">manifest.json</code>.
         </p>
+        <Button onClick={handleDownload} className="gap-2">
+          <Download className="w-4 h-4" />
+          Télécharger Colore Texte
+        </Button>
       </div>
     </section>
   );

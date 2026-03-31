@@ -43,15 +43,22 @@ body.colore-pending *:focus {
   user-select: none;
 }
 
-/* Highlight for colore-active elements */
+/* Highlight for colorized elements */
 .colore-highlighted {
   background-color: rgba(255, 224, 178, 0.5);
   border-radius: 2px;
+  outline: 2px solid rgba(230, 81, 0, 0.3);
+  outline-offset: 1px;
   transition: background-color 0.3s ease;
 }
 
-/* Active mouse colore highlight */
-.colore-mouse-active {
-  background-color: rgba(255, 183, 77, 0.4);
-  border-radius: 2px;
+/* Activatable elements get a distinct style when colorized */
+.colore-highlighted[href],
+.colore-highlighted button,
+a.colore-highlighted,
+button.colore-highlighted,
+.colore-highlighted[role="button"],
+.colore-highlighted[role="link"] {
+  outline-color: rgba(230, 81, 0, 0.6);
+  cursor: pointer !important;
 }

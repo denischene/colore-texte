@@ -4,10 +4,26 @@
   let pendingIcon = null;
   let cursorRing = null;
   let currentFocusEl = null;
-  let currentMouseEl = null;
-  let focusFirstEnter = true;
-  let mouseFirstClick = true;
+  let colorizedElements = new Set();
   let originalContents = new Map();
+
+  /* ─── Helpers ─── */
+  function isActivatable(el) {
+    if (!el) return false;
+    const tag = el.tagName.toLowerCase();
+    if (tag === 'a' && el.hasAttribute('href')) return true;
+    if (tag === 'button') return true;
+    if (tag === 'input' && ['submit', 'button', 'reset'].includes(el.type)) return true;
+    if (el.getAttribute('role') === 'button' || el.getAttribute('role') === 'link') return true;
+    if (el.hasAttribute('onclick') || el.hasAttribute('tabindex')) return false; // tabindex alone doesn't make activatable
+    return false;
+  }
+
+  function activateElement(el) {
+    if (!el) return;
+    // Temporarily remove colore state so the real click/navigation fires
+    el.click();
+  }
 
   /* ─── Syllable Splitting (French heuristic) ─── */
   const VOWELS = 'aeiouyàâäéèêëïîôùûüœæAEIOUYÀÂÄÉÈÊËÏÎÔÙÛÜŒÆ';
@@ -18,7 +34,6 @@
 
   function splitSyllables(word) {
     if (word.length <= 2) return [word];
-
     const syllables = [];
     let current = '';
 
@@ -116,23 +131,26 @@
     }
 
     el.classList.add('colore-highlighted');
+    colorizedElements.add(el);
   }
 
   function uncolorizeElement(el) {
     if (!el || !originalContents.has(el)) return;
     el.innerHTML = originalContents.get(el);
     originalContents.delete(el);
-    el.classList.remove('colore-highlighted', 'colore-mouse-active');
+    el.classList.remove('colore-highlighted');
+    colorizedElements.delete(el);
   }
 
   function uncolorizeAll() {
     for (const [el] of originalContents) {
       try {
         el.innerHTML = originalContents.get(el);
-        el.classList.remove('colore-highlighted', 'colore-mouse-active');
+        el.classList.remove('colore-highlighted');
       } catch(e) {}
     }
     originalContents.clear();
+    colorizedElements.clear();
   }
 
   /* ─── Pending Icon ─── */
@@ -188,7 +206,6 @@
 
   /* ─── State Management ─── */
   function setState(newState) {
-    const oldState = state;
     state = newState;
 
     document.body.classList.remove('colore-pending');
@@ -204,8 +221,6 @@
       createPendingIcon();
       sessionStorage.setItem('colore_active', 'pending');
       browser.runtime.sendMessage({ type: 'colore_active' }).catch(() => {});
-      focusFirstEnter = true;
-      mouseFirstClick = true;
     } else if (state === 'focus-active') {
       sessionStorage.setItem('colore_active', 'focus');
       browser.runtime.sendMessage({ type: 'colore_active' }).catch(() => {});
@@ -225,13 +240,7 @@
     }
   }
 
-  /* ─── Focus Mode ─── */
-  let focusInactivityTimer = null;
-
-  function clearFocusTimers() {
-    if (focusInactivityTimer) { clearTimeout(focusInactivityTimer); focusInactivityTimer = null; }
-  }
-
+  /* ─── Focus Mode (Keyboard) ─── */
   function handleFocusIn(e) {
     if (state !== 'pending' && state !== 'focus-active') return;
 
@@ -245,25 +254,8 @@
       return;
     }
 
-    clearFocusTimers();
-
-    if (currentFocusEl && currentFocusEl !== el) {
-      uncolorizeElement(currentFocusEl);
-    }
-
+    // focus-active: track the focused element but don't auto-colorize
     currentFocusEl = el;
-
-    const rect = el.getBoundingClientRect();
-    if (rect.top < 0 || rect.bottom > window.innerHeight) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      setTimeout(() => colorizeElement(el), 300);
-    } else {
-      colorizeElement(el);
-    }
-
-    focusInactivityTimer = setTimeout(() => {
-      uncolorizeElement(el);
-    }, 15000);
   }
 
   function handleFocusOut(e) {
@@ -273,49 +265,46 @@
   }
 
   /* ─── Mouse Mode ─── */
-  let lastMouseEl = null;
-
-  function handleMouseMove(e) {
-    if (state !== 'mouse-active' && state !== 'pending') return;
-
-    if (state === 'pending') return;
-
-    const el = document.elementFromPoint(e.clientX, e.clientY);
-    if (!el || el === document.body || el === document.documentElement) return;
-    if (el.id && el.id.startsWith('colore-')) return;
-
-    const target = el.closest('p, h1, h2, h3, h4, h5, h6, li, td, th, a, span, label, button, div');
-    if (!target) return;
-
-    if (target === lastMouseEl) return;
-
-    if (lastMouseEl) {
-      uncolorizeElement(lastMouseEl);
-    }
-
-    lastMouseEl = target;
-    colorizeElement(target);
-    target.classList.add('colore-mouse-active');
+  function getTextTarget(el) {
+    if (!el || el === document.body || el === document.documentElement) return null;
+    if (el.id && el.id.startsWith('colore-')) return null;
+    return el.closest('p, h1, h2, h3, h4, h5, h6, li, td, th, a, span, label, button, div');
   }
 
   function handleMouseClick(e) {
-    if (state === 'pending' && mouseFirstClick) {
+    if (state === 'pending') {
+      // First click in pending → switch to mouse-active mode
       e.preventDefault();
       e.stopPropagation();
-      mouseFirstClick = false;
       setState('mouse-active');
-
-      const el = document.elementFromPoint(e.clientX, e.clientY);
-      if (el) {
-        const target = el.closest('p, h1, h2, h3, h4, h5, h6, li, td, th, a, span, label, button, div');
-        if (target) {
-          lastMouseEl = target;
-          colorizeElement(target);
-          target.classList.add('colore-mouse-active');
-        }
-      }
       return;
     }
+
+    if (state !== 'mouse-active') return;
+
+    const target = getTextTarget(e.target);
+    if (!target) return;
+
+    if (colorizedElements.has(target)) {
+      // Already colorized: if activatable, activate it
+      if (isActivatable(target)) {
+        // Let the click go through naturally by not preventing
+        // But we need to uncolorize first to restore original DOM
+        uncolorizeElement(target);
+        // Don't prevent — the click will fire on the restored element
+        // We need to re-trigger since we caught this one
+        setTimeout(() => activateElement(target), 0);
+      }
+      // If not activatable, do nothing (stays colorized)
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+
+    // Not yet colorized: colorize it
+    e.preventDefault();
+    e.stopPropagation();
+    colorizeElement(target);
   }
 
   /* ─── Keyboard Handling ─── */
@@ -335,10 +324,9 @@
       return;
     }
 
-    if (e.key === 'Enter' && state === 'pending' && focusFirstEnter) {
+    if (e.key === 'Enter' && state === 'pending') {
       e.preventDefault();
       e.stopPropagation();
-      focusFirstEnter = false;
       setState('focus-active');
       if (currentFocusEl) {
         colorizeElement(currentFocusEl);
@@ -346,8 +334,27 @@
       return;
     }
 
-    if (e.key === 'Tab' && state === 'focus-active') {
-      clearFocusTimers();
+    if (e.key === 'Enter' && state === 'focus-active') {
+      if (!currentFocusEl) return;
+
+      if (colorizedElements.has(currentFocusEl)) {
+        // Already colorized
+        if (isActivatable(currentFocusEl)) {
+          // Activate it: restore DOM then trigger
+          e.preventDefault();
+          e.stopPropagation();
+          uncolorizeElement(currentFocusEl);
+          setTimeout(() => activateElement(currentFocusEl), 0);
+        }
+        // If not activatable, let Enter do nothing special
+        return;
+      }
+
+      // Not yet colorized: colorize it
+      e.preventDefault();
+      e.stopPropagation();
+      colorizeElement(currentFocusEl);
+      return;
     }
   }
 
@@ -365,7 +372,6 @@
   /* ─── Event Listeners ─── */
   document.addEventListener('focusin', handleFocusIn, true);
   document.addEventListener('focusout', handleFocusOut, true);
-  document.addEventListener('mousemove', handleMouseMove, { passive: true });
   document.addEventListener('click', handleMouseClick, true);
   document.addEventListener('keydown', handleKeyDown, true);
 
