@@ -7,7 +7,25 @@
   let colorizedElements = new Set();
   let originalContents = new Map();
 
+  /* ─── Options ─── */
+  let options = { capitalize: false, uppercase: false, colorVowels: false };
+
+  function loadOptions() {
+    browser.storage.local.get(['capitalize', 'uppercase', 'colorVowels']).then((data) => {
+      options.capitalize = !!data.capitalize;
+      options.uppercase = !!data.uppercase;
+      options.colorVowels = !!data.colorVowels;
+    }).catch(() => {});
+  }
+  loadOptions();
+
   /* ─── Helpers ─── */
+  const VOWELS = 'aeiouyàâäéèêëïîôùûüœæAEIOUYÀÂÄÉÈÊËÏÎÔÙÛÜŒÆ';
+
+  function isVowel(ch) {
+    return VOWELS.includes(ch);
+  }
+
   function isActivatable(el) {
     if (!el) return false;
     const tag = el.tagName.toLowerCase();
@@ -15,23 +33,35 @@
     if (tag === 'button') return true;
     if (tag === 'input' && ['submit', 'button', 'reset'].includes(el.type)) return true;
     if (el.getAttribute('role') === 'button' || el.getAttribute('role') === 'link') return true;
-    if (el.hasAttribute('onclick') || el.hasAttribute('tabindex')) return false; // tabindex alone doesn't make activatable
     return false;
   }
 
   function activateElement(el) {
-    if (!el) return;
-    // Temporarily remove colore state so the real click/navigation fires
-    el.click();
+    if (el) el.click();
+  }
+
+  /* ─── Text Transforms ─── */
+  function applyTextTransform(text) {
+    if (options.uppercase) return text.toUpperCase();
+    if (options.capitalize) {
+      return text.replace(/\b\w/g, c => c.toUpperCase());
+    }
+    return text;
+  }
+
+  function wrapVowels(html) {
+    if (!options.colorVowels) return html;
+    // Wrap vowels outside of HTML tags
+    return html.replace(/([^<]*)(<[^>]*>)?/g, (match, text, tag) => {
+      if (!text) return tag || '';
+      const wrapped = text.replace(/[aeiouyàâäéèêëïîôùûüœæ]/gi, v =>
+        `<span class="colore-vowel">${v}</span>`
+      );
+      return wrapped + (tag || '');
+    });
   }
 
   /* ─── Syllable Splitting (French heuristic) ─── */
-  const VOWELS = 'aeiouyàâäéèêëïîôùûüœæAEIOUYÀÂÄÉÈÊËÏÎÔÙÛÜŒÆ';
-
-  function isVowel(ch) {
-    return VOWELS.includes(ch);
-  }
-
   function splitSyllables(word) {
     if (word.length <= 2) return [word];
     const syllables = [];
@@ -60,9 +90,9 @@
       }
 
       if (!isVowel(ch) && !isVowel(next) && current.length > 1) {
-        const clusters = ['bl', 'br', 'ch', 'cl', 'cr', 'dr', 'fl', 'fr', 'gl', 'gr',
-                          'ph', 'pl', 'pr', 'qu', 'sc', 'sk', 'sl', 'sm', 'sn', 'sp',
-                          'st', 'sw', 'th', 'tr', 'vr', 'wr'];
+        const clusters = ['bl','br','ch','cl','cr','dr','fl','fr','gl','gr',
+                          'ph','pl','pr','qu','sc','sk','sl','sm','sn','sp',
+                          'st','sw','th','tr','vr','wr'];
         const pair = (ch + next).toLowerCase();
         if (!clusters.includes(pair)) {
           syllables.push(current);
@@ -93,8 +123,11 @@
   }
 
   function syllabifyText(text) {
+    // Apply text transform first
+    text = applyTextTransform(text);
+
     const tokens = text.split(/(\s+|[.,;:!?'"()\[\]{}<>\/\\—–\-…«»""]+)/);
-    return tokens.map(token => {
+    const result = tokens.map(token => {
       if (!token || /^[\s.,;:!?'"()\[\]{}<>\/\\—–\-…«»""]+$/.test(token)) {
         return token;
       }
@@ -102,6 +135,8 @@
       if (syllables.length <= 1) return token;
       return syllables.join('<span class="colore-syllable-dot">·</span>');
     }).join('');
+
+    return wrapVowels(result);
   }
 
   /* ─── DOM Manipulation ─── */
@@ -118,7 +153,6 @@
     }
 
     if (textNodes.length === 0) return;
-
     originalContents.set(el, el.innerHTML);
 
     for (const textNode of textNodes) {
@@ -194,7 +228,6 @@
     cursorRing.style.top = cy + 'px';
     cursorRing.style.display = 'block';
     cursorRing.style.opacity = '1';
-
     setTimeout(() => {
       cursorRing.style.opacity = '0';
       setTimeout(() => {
@@ -207,7 +240,6 @@
   /* ─── State Management ─── */
   function setState(newState) {
     state = newState;
-
     document.body.classList.remove('colore-pending');
 
     if (state === 'off') {
@@ -233,17 +265,12 @@
   }
 
   function toggle() {
-    if (state === 'off') {
-      setState('pending');
-    } else {
-      setState('off');
-    }
+    setState(state === 'off' ? 'pending' : 'off');
   }
 
   /* ─── Focus Mode (Keyboard) ─── */
   function handleFocusIn(e) {
     if (state !== 'pending' && state !== 'focus-active') return;
-
     const el = e.target;
     if (!el || el === document.body || el === document.documentElement) return;
     if (el.id && el.id.startsWith('colore-')) return;
@@ -253,15 +280,11 @@
       currentFocusEl = el;
       return;
     }
-
-    // focus-active: track the focused element but don't auto-colorize
     currentFocusEl = el;
   }
 
-  function handleFocusOut(e) {
-    if (state === 'pending') {
-      hidePendingIcon();
-    }
+  function handleFocusOut() {
+    if (state === 'pending') hidePendingIcon();
   }
 
   /* ─── Mouse Mode ─── */
@@ -273,7 +296,6 @@
 
   function handleMouseClick(e) {
     if (state === 'pending') {
-      // First click in pending → switch to mouse-active mode
       e.preventDefault();
       e.stopPropagation();
       setState('mouse-active');
@@ -286,22 +308,15 @@
     if (!target) return;
 
     if (colorizedElements.has(target)) {
-      // Already colorized: if activatable, activate it
       if (isActivatable(target)) {
-        // Let the click go through naturally by not preventing
-        // But we need to uncolorize first to restore original DOM
         uncolorizeElement(target);
-        // Don't prevent — the click will fire on the restored element
-        // We need to re-trigger since we caught this one
         setTimeout(() => activateElement(target), 0);
       }
-      // If not activatable, do nothing (stays colorized)
       e.preventDefault();
       e.stopPropagation();
       return;
     }
 
-    // Not yet colorized: colorize it
     e.preventDefault();
     e.stopPropagation();
     colorizeElement(target);
@@ -328,45 +343,42 @@
       e.preventDefault();
       e.stopPropagation();
       setState('focus-active');
-      if (currentFocusEl) {
-        colorizeElement(currentFocusEl);
-      }
+      if (currentFocusEl) colorizeElement(currentFocusEl);
       return;
     }
 
     if (e.key === 'Enter' && state === 'focus-active') {
       if (!currentFocusEl) return;
-
       if (colorizedElements.has(currentFocusEl)) {
-        // Already colorized
         if (isActivatable(currentFocusEl)) {
-          // Activate it: restore DOM then trigger
           e.preventDefault();
           e.stopPropagation();
           uncolorizeElement(currentFocusEl);
           setTimeout(() => activateElement(currentFocusEl), 0);
         }
-        // If not activatable, let Enter do nothing special
         return;
       }
-
-      // Not yet colorized: colorize it
       e.preventDefault();
       e.stopPropagation();
       colorizeElement(currentFocusEl);
-      return;
     }
   }
 
   /* ─── Message Handling ─── */
   browser.runtime.onMessage.addListener((msg) => {
-    if (msg.type === 'toggle_colore') {
-      toggle();
-    }
-    if (msg.type === 'start_pending') {
-      if (state === 'off') setState('pending');
+    if (msg.type === 'toggle_colore') toggle();
+    if (msg.type === 'start_pending' && state === 'off') setState('pending');
+    if (msg.type === 'options_changed') {
+      options = msg.options;
     }
     return false;
+  });
+
+  // Also reload options when storage changes (other tab changed options)
+  browser.storage.onChanged.addListener((changes) => {
+    if (changes.capitalize) options.capitalize = !!changes.capitalize.newValue;
+    if (changes.uppercase) options.uppercase = !!changes.uppercase.newValue;
+    if (changes.colorVowels) options.colorVowels = !!changes.colorVowels.newValue;
   });
 
   /* ─── Event Listeners ─── */
@@ -375,7 +387,7 @@
   document.addEventListener('click', handleMouseClick, true);
   document.addEventListener('keydown', handleKeyDown, true);
 
-  /* ─── Init: Restore state from sessionStorage ─── */
+  /* ─── Init ─── */
   const saved = sessionStorage.getItem('colore_active');
   if (saved === 'pending' || saved === 'focus' || saved === 'mouse') {
     setState('pending');
