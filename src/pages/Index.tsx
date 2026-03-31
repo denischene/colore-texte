@@ -25,8 +25,7 @@ const Index = () => {
             className="text-lg md:text-xl text-muted-foreground font-body max-w-xl mx-auto mb-8 animate-fade-up"
             style={{ animationDelay: "0.2s" }}
           >
-            Une extension Firefox qui colore le texte en séparant les syllabes
-            par un point médian <span className="syllable-dot font-bold">·</span> pour faciliter la lecture.
+            Une extension Firefox qui colore le texte pour faciliter la lecture.
           </p>
 
           <div

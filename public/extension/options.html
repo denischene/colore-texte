@@ -13,6 +13,32 @@
     }
     h2 { margin: 0 0 16px; font-size: 18px; color: #111; }
     h3 { margin: 18px 0 8px; font-size: 14px; color: #222; }
+    .options-group {
+      margin-top: 12px;
+      padding: 14px;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+    }
+    .option-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid #eee;
+    }
+    .option-row:last-child { border-bottom: none; }
+    .option-row label {
+      flex: 1;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .option-row input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: #e65100;
+      cursor: pointer;
+    }
     .commands {
       margin-top: 12px;
       padding: 14px;
@@ -50,10 +76,35 @@
     }
     .footer a { color: #e65100; text-decoration: none; }
     .footer a:hover { text-decoration: underline; }
+    .saved {
+      display: none;
+      color: #2e7d32;
+      font-size: 12px;
+      margin-top: 8px;
+      font-weight: 500;
+    }
+    .saved.show { display: block; }
   </style>
 </head>
 <body>
   <h2>🎨 Colore Texte — Réglages</h2>
+
+  <div class="options-group">
+    <h3>Options d'affichage</h3>
+    <div class="option-row">
+      <input type="checkbox" id="opt-capitalize">
+      <label for="opt-capitalize">1<sup>ères</sup> lettres en majuscules</label>
+    </div>
+    <div class="option-row">
+      <input type="checkbox" id="opt-uppercase">
+      <label for="opt-uppercase">Tout en majuscules</label>
+    </div>
+    <div class="option-row">
+      <input type="checkbox" id="opt-vowels">
+      <label for="opt-vowels">Colorer les voyelles en bleu</label>
+    </div>
+    <div class="saved" id="saved-msg">✓ Enregistré</div>
+  </div>
 
   <div class="info">
     Pour modifier le raccourci clavier, allez dans<br>
@@ -63,17 +114,17 @@
   <div class="commands">
     <h3>⌨️ Commandes au clavier</h3>
     <ul>
-      <li><kbd>Ctrl</kbd>+<kbd>M</kbd> pour activer/désactiver l'extension. Une fois activée, un petit indicateur apparaît au-dessus du focus.</li>
-      <li><kbd>Entrée</kbd> pour coloriser l'élément focusé. Quand la coloration est active, <kbd>Entrée</kbd> sur un élément activable (hyperlien, bouton) valide l'élément.</li>
-      <li><kbd>Échap.</kbd> pour désactiver la coloration.</li>
-      <li><kbd>Tab</kbd> / <kbd>Maj.</kbd>+<kbd>Tab</kbd> pour déplacer le focus d'élément en élément.</li>
+      <li><kbd>Ctrl</kbd>+<kbd>M</kbd> pour activer/désactiver l'extension.</li>
+      <li><kbd>Entrée</kbd> pour coloriser l'élément focusé. Si activable, un 2<sup>e</sup> <kbd>Entrée</kbd> l'active.</li>
+      <li><kbd>Tab</kbd> / <kbd>Maj.</kbd>+<kbd>Tab</kbd> pour naviguer.</li>
+      <li><kbd>Échap.</kbd> pour désactiver.</li>
     </ul>
 
     <h3>🖱️ Commandes à la souris</h3>
     <ul>
-      <li>Cliquer sur l'icône Colore Texte pour activer/désactiver l'extension.</li>
-      <li><kbd>Échap.</kbd> pour désactiver la coloration. Elle reste disponible, un 1<sup>er</sup> clic la réactive.</li>
-      <li>Un second clic depuis la coloration visible valide l'élément (hyperlien, bouton).</li>
+      <li>Cliquer sur l'icône pour activer. Cliquer sur un élément pour coloriser.</li>
+      <li>Si activable, un 2<sup>e</sup> clic l'active.</li>
+      <li><kbd>Échap.</kbd> pour désactiver la coloration.</li>
     </ul>
   </div>
 
@@ -81,5 +132,7 @@
     Auteur : Chêne Denis<br>
     <a href="https://loupe-zoom.lovable.app" target="_blank">loupe-zoom.lovable.app</a>
   </div>
+
+  <script src="options.js"></script>
 </body>
 </html>
