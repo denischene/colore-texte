@@ -12,22 +12,21 @@ const instructions = [
     icon: Keyboard,
     title: "Mode clavier",
     steps: [
-      <><Kbd>Ctrl</Kbd>+<Kbd>M</Kbd> pour activer l'extension (mode attente)</>,
+      <><Kbd>Ctrl</Kbd>+<Kbd>Maj</Kbd>+<Kbd>O</Kbd> pour activer et désactiver l'extension</>,
       <><Kbd>Tab</Kbd> pour naviguer entre les éléments</>,
       <><Kbd>Entrée</Kbd> pour coloriser l'élément focusé</>,
       <>Si l'élément est activable (lien, bouton), un 2e <Kbd>Entrée</Kbd> l'active</>,
-      <><Kbd>Échap.</Kbd> pour revenir en attente ou désactiver</>,
+      <><Kbd>Échap.</Kbd> pour revenir en mode attente</>,
     ],
   },
   {
     icon: Mouse,
     title: "Mode souris",
     steps: [
-      <>Cliquer sur l'icône <span className="syllable-dot font-bold">A·</span> dans la barre d'outils</>,
+      <>Cliquer sur l'icône <span className="font-bold text-primary">O</span> dans la barre d'outils</>,
       <>Cliquer sur un élément pour le coloriser</>,
       <>Si l'élément est activable, un 2e clic l'active (lien, bouton…)</>,
-      <>Les éléments non activables restent colorisés</>,
-      <><Kbd>Échap.</Kbd> pour revenir en mode attente</>,
+      <>Clic droit pour revenir en mode attente</>,
     ],
   },
 ];
@@ -50,8 +49,8 @@ const handleDownload = () => {
 
 const InstructionsSection = () => {
   return (
-    <section className="w-full max-w-3xl mx-auto">
-      <h2 className="text-2xl md:text-3xl font-display font-bold text-center mb-8 text-foreground">
+    <section className="w-full max-w-3xl mx-auto" aria-labelledby="instructions-title">
+      <h2 id="instructions-title" className="text-2xl md:text-3xl font-display font-bold text-center mb-8 text-foreground">
         Comment l'utiliser
       </h2>
 
@@ -60,17 +59,19 @@ const InstructionsSection = () => {
           <div
             key={block.title}
             className="rounded-xl border bg-card p-6 shadow-sm hover:shadow-md transition-shadow"
+            role="region"
+            aria-label={block.title}
           >
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center">
+              <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center" aria-hidden="true">
                 <block.icon className="w-5 h-5 text-primary" />
               </div>
               <h3 className="font-display font-semibold text-foreground">{block.title}</h3>
             </div>
-            <ol className="space-y-2.5">
+            <ol className="space-y-2.5" aria-label={`Étapes du ${block.title.toLowerCase()}`}>
               {block.steps.map((step, i) => (
                 <li key={i} className="flex gap-3 text-sm font-body text-muted-foreground">
-                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center font-display font-bold mt-0.5">
+                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center font-display font-bold mt-0.5" aria-hidden="true">
                     {i + 1}
                   </span>
                   <span>{step}</span>
@@ -81,9 +82,9 @@ const InstructionsSection = () => {
         ))}
       </div>
 
-      <div className="mt-8 rounded-xl border bg-highlight/30 p-6 text-center">
+      <div className="mt-8 rounded-xl border bg-highlight/30 p-6 text-center" role="region" aria-label="Téléchargement">
         <div className="flex items-center justify-center gap-3 mb-3">
-          <Download className="w-5 h-5 text-primary" />
+          <Download className="w-5 h-5 text-primary" aria-hidden="true" />
           <h3 className="font-display font-semibold text-foreground">Télécharger & Installer</h3>
         </div>
         <p className="text-sm text-muted-foreground font-body max-w-md mx-auto mb-4">
@@ -92,7 +93,7 @@ const InstructionsSection = () => {
           « Charger un module temporaire » → sélectionner <code className="px-1.5 py-0.5 rounded bg-secondary text-sm">manifest.json</code>.
         </p>
         <Button onClick={handleDownload} className="gap-2">
-          <Download className="w-4 h-4" />
+          <Download className="w-4 h-4" aria-hidden="true" />
           Télécharger Colore Texte
         </Button>
       </div>

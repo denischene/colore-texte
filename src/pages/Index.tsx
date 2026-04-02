@@ -10,8 +10,12 @@ const Index = () => {
         <div className="absolute inset-0 bg-gradient-to-b from-highlight/40 to-transparent pointer-events-none" />
         <div className="relative max-w-4xl mx-auto px-6 pt-16 pb-12 md:pt-24 md:pb-16 text-center">
           {/* Icon */}
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-primary text-primary-foreground mb-8 shadow-lg animate-fade-up">
-            <span className="text-3xl font-display font-bold">A<span className="opacity-70">·</span></span>
+          <div
+            className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-primary text-primary-foreground mb-8 shadow-lg animate-fade-up"
+            role="img"
+            aria-label="Logo Colore Texte"
+          >
+            <span className="text-4xl font-display font-bold">O</span>
           </div>
 
           <h1
@@ -25,7 +29,7 @@ const Index = () => {
             className="text-lg md:text-xl text-muted-foreground font-body max-w-xl mx-auto mb-8 animate-fade-up"
             style={{ animationDelay: "0.2s" }}
           >
-            Une extension Firefox qui colore le texte pour faciliter la lecture.
+            Une extension Firefox pour faciliter la lecture des syllabes et des sons
           </p>
 
           <div
