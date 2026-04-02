@@ -1,11 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import SyllabifiedText from "./SyllabifiedText";
 
 const DEMO_TEXT =
   "La lecture est une activité fondamentale qui permet de découvrir le monde et d'enrichir ses connaissances.";
-
-const PARAGRAPH_TEXT =
-  "La raison du plus fort est toujours la meilleure. Nous l'allons montrer tout à l'heure. Un Agneau se désaltérait dans le courant d'une onde pure.";
 
 /* ─── Syllable splitting (French heuristic) ─── */
 const VOWELS = "aeiouyàâäéèêëïîôùûüœæAEIOUYÀÂÄÉÈÊËÏÎÔÙÛÜŒÆ";
@@ -98,7 +95,6 @@ const ColoredWord = ({ word, mode }: ColoredWordProps) => {
     );
   }
 
-  // phonemes-colored: color each character by its phoneme group
   return (
     <span>
       {word.split("").map((ch, i) => {
@@ -129,7 +125,7 @@ const ColoredText = ({ text, mode }: { text: string; mode: ColoredWordProps["mod
 };
 
 /* ─── Demo cards ─── */
-type DemoMode = "syllables-separated" | "syllables-colored" | "phonemes-colored" | "scope-word" | "scope-sentence" | "scope-paragraph";
+type DemoMode = "syllables-separated" | "syllables-colored" | "phonemes-colored";
 
 interface DemoCardProps {
   title: string;
@@ -139,66 +135,6 @@ interface DemoCardProps {
 
 const DemoCard = ({ title, description, mode }: DemoCardProps) => {
   const [active, setActive] = useState(false);
-  const [hoveredWord, setHoveredWord] = useState<number | null>(null);
-  const [hoveredSentence, setHoveredSentence] = useState(false);
-
-  const text = DEMO_TEXT;
-  const tokens = useMemo(() => text.split(/(\s+|[.,;:!?'"()\[\]{}<>\/\\—–\-…«»""]+)/), [text]);
-
-  const renderContent = () => {
-    if (!active) {
-      return <p className="text-muted-foreground">{text}</p>;
-    }
-
-    if (mode === "syllables-separated" || mode === "syllables-colored" || mode === "phonemes-colored") {
-      return <ColoredText text={text} mode={mode} />;
-    }
-
-    if (mode === "scope-word") {
-      return (
-        <span>
-          {tokens.map((token, i) => {
-            if (!token || /^[\s.,;:!?'"()\[\]{}<>\/\\—–\-…«»""]+$/.test(token)) {
-              return <span key={i}>{token}</span>;
-            }
-            const isHovered = hoveredWord === i;
-            return (
-              <span
-                key={i}
-                onMouseEnter={() => setHoveredWord(i)}
-                onMouseLeave={() => setHoveredWord(null)}
-                className={`cursor-pointer rounded transition-colors ${isHovered ? "demo-highlight px-0.5" : ""}`}
-              >
-                {isHovered ? <SyllabifiedText text={token} /> : token}
-              </span>
-            );
-          })}
-        </span>
-      );
-    }
-
-    if (mode === "scope-sentence") {
-      return (
-        <span
-          onMouseEnter={() => setHoveredSentence(true)}
-          onMouseLeave={() => setHoveredSentence(false)}
-          className={`cursor-pointer rounded transition-colors ${hoveredSentence ? "demo-highlight p-1" : ""}`}
-        >
-          {hoveredSentence ? <SyllabifiedText text={text} /> : text}
-        </span>
-      );
-    }
-
-    if (mode === "scope-paragraph") {
-      return (
-        <div className="demo-highlight p-3 rounded-lg">
-          <SyllabifiedText text={PARAGRAPH_TEXT} />
-        </div>
-      );
-    }
-
-    return <p>{text}</p>;
-  };
 
   return (
     <div className="rounded-xl border bg-card p-5 shadow-sm" role="region" aria-label={title}>
@@ -222,7 +158,7 @@ const DemoCard = ({ title, description, mode }: DemoCardProps) => {
       </div>
       <p className="text-xs text-muted-foreground mb-3 font-body">{description}</p>
       <div className="text-base leading-relaxed font-body">
-        {renderContent()}
+        {active ? <ColoredText text={DEMO_TEXT} mode={mode} /> : <p className="text-muted-foreground">{DEMO_TEXT}</p>}
       </div>
     </div>
   );
@@ -235,7 +171,7 @@ const DemoSection = () => {
         Démonstrations interactives
       </h2>
 
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid md:grid-cols-3 gap-6">
         <DemoCard
           title="Syllabes séparées"
           description="Les syllabes sont séparées par des points médians (·) pour faciliter le déchiffrage."
@@ -250,21 +186,6 @@ const DemoSection = () => {
           title="Prononciations colorées"
           description="Chaque phonème est coloré selon sa prononciation pour aider au décodage des sons."
           mode="phonemes-colored"
-        />
-        <DemoCard
-          title="Sur le mot"
-          description="Survolez un mot pour voir ses syllabes. La coloration s'applique uniquement au mot pointé."
-          mode="scope-word"
-        />
-        <DemoCard
-          title="Sur la phrase"
-          description="Survolez la phrase pour coloriser toutes les syllabes. La coloration s'applique à la phrase entière."
-          mode="scope-sentence"
-        />
-        <DemoCard
-          title="Sur le paragraphe"
-          description="La coloration s'applique à un paragraphe entier pour une lecture continue."
-          mode="scope-paragraph"
         />
       </div>
     </section>

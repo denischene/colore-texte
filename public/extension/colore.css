@@ -1,43 +1,35 @@
-/* Pending indicator above focused element */
-#colore-pending-icon {
-  position: fixed;
-  transform: translateX(-50%);
-  pointer-events: none;
-  z-index: 2147483647;
-  display: none;
+/* J cursor when extension is active */
+body.jcolore-active {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32'%3E%3Cpath d='M2 2l0 18 5-5 5 9 3-2-5-9 7 0z' fill='%23000' stroke='%23fff' stroke-width='1'/%3E%3Ctext x='17' y='16' font-size='16' font-weight='900' fill='%23e65100' stroke='%23000' stroke-width='0.5' font-family='system-ui'%3EJ%3C/text%3E%3C/svg%3E") 2 2, auto !important;
+}
+body.jcolore-active * {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32'%3E%3Cpath d='M2 2l0 18 5-5 5 9 3-2-5-9 7 0z' fill='%23000' stroke='%23fff' stroke-width='1'/%3E%3Ctext x='17' y='16' font-size='16' font-weight='900' fill='%23e65100' stroke='%23000' stroke-width='0.5' font-family='system-ui'%3EJ%3C/text%3E%3C/svg%3E") 2 2, auto !important;
 }
 
-/* Cursor ring animation */
-#colore-cursor-ring {
-  position: fixed;
-  width: 70px;
-  height: 70px;
-  border-radius: 50%;
-  border: 4px solid #fff;
-  outline: 4px solid #000;
-  pointer-events: none;
-  z-index: 2147483647;
-  transform: translate(-50%, -50%);
-  display: none;
-  transition: opacity 0.6s ease;
-}
-
-/* Pending mode: special cursor with O */
-body.colore-pending {
-  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32'%3E%3Cpath d='M2 2l0 18 5-5 5 9 3-2-5-9 7 0z' fill='%23000' stroke='%23fff' stroke-width='1'/%3E%3Ctext x='18' y='16' font-size='16' font-weight='bold' fill='%23e65100'%3EO%3C/text%3E%3C/svg%3E") 2 2, auto !important;
-}
-body.colore-pending * {
-  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32'%3E%3Cpath d='M2 2l0 18 5-5 5 9 3-2-5-9 7 0z' fill='%23000' stroke='%23fff' stroke-width='1'/%3E%3Ctext x='18' y='16' font-size='16' font-weight='bold' fill='%23e65100'%3EO%3C/text%3E%3C/svg%3E") 2 2, auto !important;
-}
-
-/* Pending focus outline */
-body.colore-pending *:focus {
+/* Focus indicator with J */
+body.jcolore-active *:focus {
   outline: 3px solid #e65100 !important;
   outline-offset: 2px !important;
+  position: relative;
+}
+body.jcolore-active *:focus::before {
+  content: 'J';
+  position: absolute;
+  top: -22px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 18px;
+  font-weight: 900;
+  color: #e65100;
+  text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff,
+               -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000;
+  pointer-events: none;
+  z-index: 2147483647;
+  font-family: system-ui, sans-serif;
 }
 
 /* Highlighted elements */
-.colore-highlighted {
+.jcolore-highlighted {
   background-color: rgba(255, 224, 178, 0.5);
   border-radius: 2px;
   outline: 2px solid rgba(230, 81, 0, 0.3);
@@ -46,11 +38,11 @@ body.colore-pending *:focus {
 }
 
 /* Activatable elements get distinct style */
-.colore-highlighted[href],
-a.colore-highlighted,
-button.colore-highlighted,
-.colore-highlighted[role="button"],
-.colore-highlighted[role="link"] {
+.jcolore-highlighted[href],
+a.jcolore-highlighted,
+button.jcolore-highlighted,
+.jcolore-highlighted[role="button"],
+.jcolore-highlighted[role="link"] {
   outline-color: rgba(230, 81, 0, 0.6);
   cursor: pointer !important;
 }

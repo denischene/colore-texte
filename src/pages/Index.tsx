@@ -13,16 +13,16 @@ const Index = () => {
           <div
             className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-primary text-primary-foreground mb-8 shadow-lg animate-fade-up"
             role="img"
-            aria-label="Logo Colore Texte"
+            aria-label="Logo J'cOLorE"
           >
-            <span className="text-4xl font-display font-bold">O</span>
+            <span className="text-2xl font-display font-bold leading-tight">J'cOL<br/>orE</span>
           </div>
 
           <h1
             className="text-4xl md:text-6xl font-display font-extrabold text-foreground mb-4 animate-fade-up"
             style={{ animationDelay: "0.1s" }}
           >
-            <SyllabifiedText text="Colore Texte" />
+            <SyllabifiedText text="J'cOLorE le texte" />
           </h1>
 
           <p

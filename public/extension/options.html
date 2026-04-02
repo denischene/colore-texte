@@ -33,8 +33,7 @@
       font-size: 13px;
       cursor: pointer;
     }
-    .option-row input[type="radio"],
-    .option-row input[type="checkbox"] {
+    .option-row input[type="radio"] {
       width: 18px;
       height: 18px;
       accent-color: #e65100;
@@ -88,14 +87,10 @@
   </style>
 </head>
 <body>
-  <h2>🎨 Colore Texte — Réglages</h2>
+  <h2>🎨 J'cOLorE le texte — Réglages par défaut</h2>
 
   <div class="options-group">
     <h3>Mode de coloration</h3>
-    <div class="option-row">
-      <input type="radio" name="colorMode" id="mode-none" value="none">
-      <label for="mode-none">Sans colorer</label>
-    </div>
     <div class="option-row">
       <input type="radio" name="colorMode" id="mode-syllables-sep" value="syllables-separated">
       <label for="mode-syllables-sep">Syllabes séparées</label>
@@ -132,6 +127,18 @@
       <input type="radio" name="colorScope" id="scope-all" value="all">
       <label for="scope-all">Colorer tout</label>
     </div>
+  </div>
+
+  <div class="options-group">
+    <h3>Déclenchement souris</h3>
+    <div class="option-row">
+      <input type="radio" name="mouseMode" id="mouse-hover" value="hover">
+      <label for="mouse-hover">Colorer au survol</label>
+    </div>
+    <div class="option-row">
+      <input type="radio" name="mouseMode" id="mouse-click" value="click">
+      <label for="mouse-click">Colorer au clic</label>
+    </div>
     <div class="saved" id="saved-msg">✓ Enregistré</div>
   </div>
 
@@ -143,7 +150,7 @@
   <div class="commands">
     <h3>⌨️ Commandes au clavier</h3>
     <ul>
-      <li><kbd>Ctrl</kbd>+<kbd>Maj</kbd>+<kbd>O</kbd> pour activer/désactiver l'extension.</li>
+      <li><kbd>Ctrl</kbd>+<kbd>Maj</kbd>+<kbd>J</kbd> pour activer/désactiver l'extension.</li>
       <li><kbd>Tab</kbd> pour naviguer entre les éléments.</li>
       <li><kbd>Entrée</kbd> pour coloriser l'élément focusé. Si activable, un 2<sup>e</sup> <kbd>Entrée</kbd> l'active.</li>
       <li><kbd>Échap.</kbd> pour revenir en mode attente.</li>
@@ -151,8 +158,8 @@
 
     <h3>🖱️ Commandes à la souris</h3>
     <ul>
-      <li>Cliquer sur l'icône <strong>O</strong> dans la barre d'outils pour activer.</li>
-      <li>Cliquer sur un élément pour le coloriser.</li>
+      <li>Cliquer sur l'icône <strong>J</strong> dans la barre d'outils pour activer.</li>
+      <li>Cliquer ou survoler un élément pour le coloriser (selon le réglage).</li>
       <li>Si activable, un 2<sup>e</sup> clic l'active.</li>
       <li>Clic droit pour revenir en mode attente.</li>
     </ul>
@@ -160,7 +167,7 @@
 
   <div class="footer">
     Auteur : Chêne Denis<br>
-    <a href="https://loupe-zoom.lovable.app" target="_blank">loupe-zoom.lovable.app</a>
+    <a href="https://colore-texte.lovable.app" target="_blank">colore-texte.lovable.app</a>
   </div>
 
   <script src="options.js"></script>
