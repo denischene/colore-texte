@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
   <meta charset="utf-8">
   <style>
@@ -9,10 +9,10 @@
       margin: 0;
       background: #f5f5f5;
       color: #333;
-      max-width: 480px;
+      max-width: 520px;
     }
     h2 { margin: 0 0 16px; font-size: 18px; color: #111; }
-    h3 { margin: 18px 0 8px; font-size: 14px; color: #222; }
+    h3 { margin: 18px 0 8px; font-size: 14px; color: #222; font-weight: 600; }
     .options-group {
       margin-top: 12px;
       padding: 14px;
@@ -33,6 +33,7 @@
       font-size: 13px;
       cursor: pointer;
     }
+    .option-row input[type="radio"],
     .option-row input[type="checkbox"] {
       width: 18px;
       height: 18px;
@@ -90,18 +91,46 @@
   <h2>🎨 Colore Texte — Réglages</h2>
 
   <div class="options-group">
-    <h3>Options d'affichage</h3>
+    <h3>Mode de coloration</h3>
     <div class="option-row">
-      <input type="checkbox" id="opt-capitalize">
-      <label for="opt-capitalize">1<sup>ères</sup> lettres en majuscules</label>
+      <input type="radio" name="colorMode" id="mode-none" value="none">
+      <label for="mode-none">Sans colorer</label>
     </div>
     <div class="option-row">
-      <input type="checkbox" id="opt-uppercase">
-      <label for="opt-uppercase">Tout en majuscules</label>
+      <input type="radio" name="colorMode" id="mode-syllables-sep" value="syllables-separated">
+      <label for="mode-syllables-sep">Syllabes séparées</label>
     </div>
     <div class="option-row">
-      <input type="checkbox" id="opt-vowels">
-      <label for="opt-vowels">Colorer les voyelles en bleu</label>
+      <input type="radio" name="colorMode" id="mode-syllables-col" value="syllables-colored">
+      <label for="mode-syllables-col">Syllabes colorées</label>
+    </div>
+    <div class="option-row">
+      <input type="radio" name="colorMode" id="mode-phonemes" value="phonemes-colored">
+      <label for="mode-phonemes">Prononciations colorées</label>
+    </div>
+    <div class="option-row">
+      <input type="radio" name="colorMode" id="mode-custom" value="custom-colors">
+      <label for="mode-custom">Couleurs personnalisées</label>
+    </div>
+  </div>
+
+  <div class="options-group">
+    <h3>Portée de la coloration</h3>
+    <div class="option-row">
+      <input type="radio" name="colorScope" id="scope-word" value="word">
+      <label for="scope-word">Colorer le mot pointé</label>
+    </div>
+    <div class="option-row">
+      <input type="radio" name="colorScope" id="scope-sentence" value="sentence">
+      <label for="scope-sentence">Colorer la phrase pointée</label>
+    </div>
+    <div class="option-row">
+      <input type="radio" name="colorScope" id="scope-paragraph" value="paragraph">
+      <label for="scope-paragraph">Colorer le paragraphe</label>
+    </div>
+    <div class="option-row">
+      <input type="radio" name="colorScope" id="scope-all" value="all">
+      <label for="scope-all">Colorer tout</label>
     </div>
     <div class="saved" id="saved-msg">✓ Enregistré</div>
   </div>
@@ -114,17 +143,18 @@
   <div class="commands">
     <h3>⌨️ Commandes au clavier</h3>
     <ul>
-      <li><kbd>Ctrl</kbd>+<kbd>M</kbd> pour activer/désactiver l'extension.</li>
+      <li><kbd>Ctrl</kbd>+<kbd>Maj</kbd>+<kbd>O</kbd> pour activer/désactiver l'extension.</li>
+      <li><kbd>Tab</kbd> pour naviguer entre les éléments.</li>
       <li><kbd>Entrée</kbd> pour coloriser l'élément focusé. Si activable, un 2<sup>e</sup> <kbd>Entrée</kbd> l'active.</li>
-      <li><kbd>Tab</kbd> / <kbd>Maj.</kbd>+<kbd>Tab</kbd> pour naviguer.</li>
-      <li><kbd>Échap.</kbd> pour désactiver.</li>
+      <li><kbd>Échap.</kbd> pour revenir en mode attente.</li>
     </ul>
 
     <h3>🖱️ Commandes à la souris</h3>
     <ul>
-      <li>Cliquer sur l'icône pour activer. Cliquer sur un élément pour coloriser.</li>
+      <li>Cliquer sur l'icône <strong>O</strong> dans la barre d'outils pour activer.</li>
+      <li>Cliquer sur un élément pour le coloriser.</li>
       <li>Si activable, un 2<sup>e</sup> clic l'active.</li>
-      <li><kbd>Échap.</kbd> pour désactiver la coloration.</li>
+      <li>Clic droit pour revenir en mode attente.</li>
     </ul>
   </div>
 

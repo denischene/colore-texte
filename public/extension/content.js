@@ -8,24 +8,17 @@
   let originalContents = new Map();
 
   /* ─── Options ─── */
-  let options = { capitalize: false, uppercase: false, colorVowels: false };
+  let options = { colorMode: 'syllables-separated', colorScope: 'word' };
 
   function loadOptions() {
-    browser.storage.local.get(['capitalize', 'uppercase', 'colorVowels']).then((data) => {
-      options.capitalize = !!data.capitalize;
-      options.uppercase = !!data.uppercase;
-      options.colorVowels = !!data.colorVowels;
+    browser.storage.local.get(['colorMode', 'colorScope']).then((data) => {
+      options.colorMode = data.colorMode || 'syllables-separated';
+      options.colorScope = data.colorScope || 'word';
     }).catch(() => {});
   }
   loadOptions();
 
   /* ─── Helpers ─── */
-  const VOWELS = 'aeiouyàâäéèêëïîôùûüœæAEIOUYÀÂÄÉÈÊËÏÎÔÙÛÜŒÆ';
-
-  function isVowel(ch) {
-    return VOWELS.includes(ch);
-  }
-
   function isActivatable(el) {
     if (!el) return false;
     const tag = el.tagName.toLowerCase();
@@ -40,103 +33,67 @@
     if (el) el.click();
   }
 
-  /* ─── Text Transforms ─── */
-  function applyTextTransform(text) {
-    if (options.uppercase) return text.toUpperCase();
-    if (options.capitalize) {
-      return text.replace(/\b\w/g, c => c.toUpperCase());
+  /* ─── LireCouleur Profiles ─── */
+  function getProfile() {
+    const mode = options.colorMode;
+    if (mode === 'none') return null;
+
+    if (mode === 'syllables-separated') {
+      return JSON.parse('{"name":"Syllabes séparées","params":{"novice_reader":true,"SYLLABES_LC":true},"format":{},"process":[{"function":"syllabes","separator":"·"},{"function":"phonemes","format":[{"color":"#999999","phonemes":["#","verb_3p","#_amb"]}]}]}');
     }
-    return text;
+
+    if (mode === 'syllables-colored') {
+      return JSON.parse('{"name":"Syllabes colorées","params":{"novice_reader":true,"SYLLABES_LC":true},"format":{},"process":[{"function":"alternsyllabes","format":[{"color":"#e53935"},{"color":"#1e88e5"}]},{"function":"phonemes","format":[{"color":"#999999","phonemes":["#","verb_3p","#_amb"]}]}]}');
+    }
+
+    if (mode === 'phonemes-colored') {
+      return JSON.parse(JSON.stringify(getDefaultProfile()));
+    }
+
+    if (mode === 'custom-colors') {
+      return JSON.parse(JSON.stringify(getDefaultProfile()));
+    }
+
+    return null;
   }
 
-  function wrapVowels(html) {
-    if (!options.colorVowels) return html;
-    // Wrap vowels outside of HTML tags
-    return html.replace(/([^<]*)(<[^>]*>)?/g, (match, text, tag) => {
-      if (!text) return tag || '';
-      const wrapped = text.replace(/[aeiouyàâäéèêëïîôùûüœæ]/gi, v =>
-        `<span class="colore-vowel">${v}</span>`
-      );
-      return wrapped + (tag || '');
-    });
+  function applyLireCouleur(text) {
+    const profileJson = getProfile();
+    if (!profileJson) return text;
+    try {
+      const up = new UserProfile(profileJson);
+      const tempEl = document.createElement('span');
+      const html = up.toHTML(text, tempEl);
+      return html;
+    } catch (e) {
+      console.error('Colore Texte LireCouleur error:', e);
+      return text;
+    }
   }
 
-  /* ─── Syllable Splitting (French heuristic) ─── */
-  function splitSyllables(word) {
-    if (word.length <= 2) return [word];
-    const syllables = [];
-    let current = '';
-
-    for (let i = 0; i < word.length; i++) {
-      const ch = word[i];
-      current += ch;
-
-      if (i === word.length - 1) {
-        if (syllables.length > 0 && current.length === 1 && !isVowel(ch)) {
-          syllables[syllables.length - 1] += current;
-        } else {
-          syllables.push(current);
-        }
-        current = '';
-        continue;
-      }
-
-      const next = word[i + 1];
-
-      if (isVowel(ch) && !isVowel(next) && i + 2 < word.length && isVowel(word[i + 2])) {
-        syllables.push(current);
-        current = '';
-        continue;
-      }
-
-      if (!isVowel(ch) && !isVowel(next) && current.length > 1) {
-        const clusters = ['bl','br','ch','cl','cr','dr','fl','fr','gl','gr',
-                          'ph','pl','pr','qu','sc','sk','sl','sm','sn','sp',
-                          'st','sw','th','tr','vr','wr'];
-        const pair = (ch + next).toLowerCase();
-        if (!clusters.includes(pair)) {
-          syllables.push(current);
-          current = '';
-          continue;
-        }
-      }
+  /* ─── Scope: find target elements ─── */
+  function getScopeTargets(el) {
+    const scope = options.colorScope;
+    if (scope === 'all') {
+      return Array.from(document.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, td, th, blockquote, figcaption, dt, dd'));
     }
-
-    if (current) {
-      if (syllables.length > 0 && current.length === 1) {
-        syllables[syllables.length - 1] += current;
-      } else {
-        syllables.push(current);
-      }
+    if (scope === 'paragraph') {
+      const p = el.closest('p, h1, h2, h3, h4, h5, h6, li, blockquote, td, th, div');
+      return p ? [p] : [el];
     }
-
-    const merged = [];
-    for (const s of syllables) {
-      if (merged.length > 0 && s.length === 1 && !isVowel(s)) {
-        merged[merged.length - 1] += s;
-      } else {
-        merged.push(s);
-      }
+    if (scope === 'sentence') {
+      // For sentence scope, we colorize the parent element (paragraph-like) containing the target
+      const p = el.closest('p, h1, h2, h3, h4, h5, h6, li, blockquote, td, th, div');
+      return p ? [p] : [el];
     }
-
-    return merged.length > 0 ? merged : [word];
+    // word scope: colorize the closest text element
+    return [el];
   }
 
-  function syllabifyText(text) {
-    // Apply text transform first
-    text = applyTextTransform(text);
-
-    const tokens = text.split(/(\s+|[.,;:!?'"()\[\]{}<>\/\\—–\-…«»""]+)/);
-    const result = tokens.map(token => {
-      if (!token || /^[\s.,;:!?'"()\[\]{}<>\/\\—–\-…«»""]+$/.test(token)) {
-        return token;
-      }
-      const syllables = splitSyllables(token);
-      if (syllables.length <= 1) return token;
-      return syllables.join('<span class="colore-syllable-dot">·</span>');
-    }).join('');
-
-    return wrapVowels(result);
+  function getTextTarget(el) {
+    if (!el || el === document.body || el === document.documentElement) return null;
+    if (el.id && el.id.startsWith('colore-')) return null;
+    return el.closest('p, h1, h2, h3, h4, h5, h6, li, td, th, a, span, label, button, div, blockquote, figcaption');
   }
 
   /* ─── DOM Manipulation ─── */
@@ -156,16 +113,23 @@
     originalContents.set(el, el.innerHTML);
 
     for (const textNode of textNodes) {
-      const syllabified = syllabifyText(textNode.textContent);
-      if (syllabified !== textNode.textContent) {
+      const processed = applyLireCouleur(textNode.textContent);
+      if (processed !== textNode.textContent) {
         const span = document.createElement('span');
-        span.innerHTML = syllabified;
+        span.innerHTML = processed;
         textNode.parentNode.replaceChild(span, textNode);
       }
     }
 
     el.classList.add('colore-highlighted');
     colorizedElements.add(el);
+  }
+
+  function colorizeTargets(el) {
+    const targets = getScopeTargets(el);
+    for (const t of targets) {
+      colorizeElement(t);
+    }
   }
 
   function uncolorizeElement(el) {
@@ -193,8 +157,7 @@
     pendingIcon = document.createElement('div');
     pendingIcon.id = 'colore-pending-icon';
     pendingIcon.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <text x="4" y="18" font-size="16" font-weight="bold" fill="#e65100" font-family="system-ui">A</text>
-      <text x="14" y="18" font-size="12" fill="#e65100" font-family="system-ui">·</text>
+      <text x="6" y="18" font-size="18" font-weight="bold" fill="#e65100" font-family="system-ui">O</text>
     </svg>`;
     document.documentElement.appendChild(pendingIcon);
   }
@@ -288,12 +251,6 @@
   }
 
   /* ─── Mouse Mode ─── */
-  function getTextTarget(el) {
-    if (!el || el === document.body || el === document.documentElement) return null;
-    if (el.id && el.id.startsWith('colore-')) return null;
-    return el.closest('p, h1, h2, h3, h4, h5, h6, li, td, th, a, span, label, button, div');
-  }
-
   function handleMouseClick(e) {
     if (state === 'pending') {
       e.preventDefault();
@@ -319,7 +276,16 @@
 
     e.preventDefault();
     e.stopPropagation();
-    colorizeElement(target);
+    colorizeTargets(target);
+  }
+
+  /* ─── Right-click to return to pending ─── */
+  function handleContextMenu(e) {
+    if (state === 'mouse-active' || state === 'focus-active') {
+      e.preventDefault();
+      e.stopPropagation();
+      setState('pending');
+    }
   }
 
   /* ─── Keyboard Handling ─── */
@@ -343,7 +309,7 @@
       e.preventDefault();
       e.stopPropagation();
       setState('focus-active');
-      if (currentFocusEl) colorizeElement(currentFocusEl);
+      if (currentFocusEl) colorizeTargets(currentFocusEl);
       return;
     }
 
@@ -360,7 +326,7 @@
       }
       e.preventDefault();
       e.stopPropagation();
-      colorizeElement(currentFocusEl);
+      colorizeTargets(currentFocusEl);
     }
   }
 
@@ -374,17 +340,16 @@
     return false;
   });
 
-  // Also reload options when storage changes (other tab changed options)
   browser.storage.onChanged.addListener((changes) => {
-    if (changes.capitalize) options.capitalize = !!changes.capitalize.newValue;
-    if (changes.uppercase) options.uppercase = !!changes.uppercase.newValue;
-    if (changes.colorVowels) options.colorVowels = !!changes.colorVowels.newValue;
+    if (changes.colorMode) options.colorMode = changes.colorMode.newValue || 'syllables-separated';
+    if (changes.colorScope) options.colorScope = changes.colorScope.newValue || 'word';
   });
 
   /* ─── Event Listeners ─── */
   document.addEventListener('focusin', handleFocusIn, true);
   document.addEventListener('focusout', handleFocusOut, true);
   document.addEventListener('click', handleMouseClick, true);
+  document.addEventListener('contextmenu', handleContextMenu, true);
   document.addEventListener('keydown', handleKeyDown, true);
 
   /* ─── Init ─── */

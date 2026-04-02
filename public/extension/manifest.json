@@ -1,8 +1,8 @@
 {
   "manifest_version": 2,
   "name": "Colore Texte",
-  "version": "1.0.0",
-  "description": "Colore le texte en séparant les syllabes par un point médian",
+  "version": "2.0.0",
+  "description": "Extension Firefox pour faciliter la lecture des syllabes et des sons",
   "author": "Chêne Denis",
   "homepage_url": "https://loupe-zoom.lovable.app",
   "permissions": ["activeTab", "<all_urls>", "storage"],
@@ -24,7 +24,7 @@
   "commands": {
     "toggle-colore": {
       "suggested_key": {
-        "default": "Ctrl+M"
+        "default": "Ctrl+Shift+O"
       },
       "description": "Activer/désactiver Colore Texte"
     }
@@ -32,7 +32,14 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content.js"],
+      "js": [
+        "lirecouleur.js",
+        "functionlc6.js",
+        "processlc6.js",
+        "json_default_profile.js",
+        "userprofile.js",
+        "content.js"
+      ],
       "css": ["colore.css"]
     }
   ],
