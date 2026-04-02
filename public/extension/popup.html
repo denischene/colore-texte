@@ -9,7 +9,7 @@
       padding: 12px;
       background: #f9f9f9;
       color: #333;
-      width: 340px;
+      width: 370px;
     }
     h3 { margin: 0 0 8px; font-size: 13px; color: #222; font-weight: 600; }
     .popup-row {
@@ -40,6 +40,28 @@
       accent-color: #e65100;
       cursor: pointer;
     }
+    .mouse-section {
+      margin-top: 10px;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 10px;
+    }
+    .mouse-section .option-row { display: inline-flex; margin-right: 12px; }
+    .shortcut-hint {
+      margin-top: 8px;
+      font-size: 11px;
+      color: #888;
+      text-align: center;
+    }
+    .shortcut-hint kbd {
+      background: #eee;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+      padding: 0 4px;
+      font-size: 11px;
+      font-family: monospace;
+    }
     #activate-btn {
       display: block;
       width: 100%;
@@ -56,6 +78,8 @@
     }
     #activate-btn:hover { background: #bf4400; }
     #activate-btn:focus { outline: 2px solid #e65100; outline-offset: 2px; }
+    #activate-btn.active-state { background: #c62828; }
+    #activate-btn.active-state:hover { background: #b71c1c; }
   </style>
 </head>
 <body>
@@ -80,14 +104,14 @@
       </div>
     </div>
     <div class="popup-col">
-      <h3>Portée</h3>
+      <h3>Portée <kbd>+</kbd> <kbd>-</kbd></h3>
       <div class="option-row">
         <input type="radio" name="colorScope" id="ps-word" value="word">
-        <label for="ps-word">Mot pointé</label>
+        <label for="ps-word">Mot</label>
       </div>
       <div class="option-row">
         <input type="radio" name="colorScope" id="ps-sentence" value="sentence">
-        <label for="ps-sentence">Phrase pointée</label>
+        <label for="ps-sentence">Phrase</label>
       </div>
       <div class="option-row">
         <input type="radio" name="colorScope" id="ps-paragraph" value="paragraph">
@@ -99,6 +123,21 @@
       </div>
     </div>
   </div>
+
+  <div class="mouse-section">
+    <h3>Déclenchement souris</h3>
+    <div class="option-row">
+      <input type="radio" name="mouseMode" id="pm-hover" value="hover">
+      <label for="pm-hover">Colorer au survol</label>
+    </div>
+    <div class="option-row">
+      <input type="radio" name="mouseMode" id="pm-click" value="click">
+      <label for="pm-click">Colorer au clic</label>
+    </div>
+  </div>
+
+  <div class="shortcut-hint">Portée ajustable avec <kbd>+</kbd> et <kbd>-</kbd> une fois activé</div>
+
   <button id="activate-btn">Activer</button>
   <script src="popup.js"></script>
 </body>

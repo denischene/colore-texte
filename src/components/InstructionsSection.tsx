@@ -17,16 +17,18 @@ const instructions = [
       <><Kbd>Entrée</Kbd> pour coloriser l'élément focusé</>,
       <>Si l'élément est activable (lien, bouton), un 2e <Kbd>Entrée</Kbd> l'active</>,
       <><Kbd>Échap.</Kbd> pour revenir en mode attente</>,
+      <><Kbd>+</Kbd> et <Kbd>-</Kbd> pour changer la portée (mot / phrase / paragraphe / tout)</>,
     ],
   },
   {
     icon: Mouse,
     title: "Mode souris",
     steps: [
-      <>Cliquer sur l'icône <span className="font-bold text-primary">J</span> dans la barre d'outils pour activer</>,
+      <>Cliquer sur l'icône <span className="inline-block w-5 h-5 align-text-bottom"><img src="/extension/icon.png" alt="palette" className="w-full h-full" /></span> dans la barre d'outils pour activer</>,
       <>Cliquer ou survoler un élément pour le coloriser (selon le réglage)</>,
       <>Si l'élément est activable, un 2e clic l'active (lien, bouton…)</>,
       <>Clic droit pour revenir en mode attente</>,
+      <><Kbd>+</Kbd> et <Kbd>-</Kbd> pour changer la portée</>,
     ],
   },
 ];

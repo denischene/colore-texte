@@ -8,6 +8,8 @@
   /* ─── Options ─── */
   let options = { colorMode: 'syllables-colored', colorScope: 'sentence', mouseMode: 'click' };
 
+  const SCOPE_ORDER = ['word', 'sentence', 'paragraph', 'all'];
+
   function loadOptions() {
     browser.storage.local.get(['colorMode', 'colorScope', 'mouseMode']).then((data) => {
       options.colorMode = data.colorMode || 'syllables-colored';
@@ -26,6 +28,28 @@
     if (tag === 'input' && ['submit', 'button', 'reset'].includes(el.type)) return true;
     if (el.getAttribute('role') === 'button' || el.getAttribute('role') === 'link') return true;
     return false;
+  }
+
+  /* ─── Scope labels for feedback ─── */
+  const SCOPE_LABELS = { word: 'Mot', sentence: 'Phrase', paragraph: 'Paragraphe', all: 'Tout' };
+
+  /* ─── Feedback overlay ─── */
+  let feedbackTimeout = null;
+  function showScopeFeedback(scopeValue) {
+    let fb = document.getElementById('jcolore-scope-feedback');
+    if (!fb) {
+      fb = document.createElement('div');
+      fb.id = 'jcolore-scope-feedback';
+      fb.setAttribute('aria-live', 'polite');
+      fb.setAttribute('role', 'status');
+      document.body.appendChild(fb);
+    }
+    fb.textContent = SCOPE_LABELS[scopeValue] || scopeValue;
+    fb.classList.add('jcolore-feedback-visible');
+    clearTimeout(feedbackTimeout);
+    feedbackTimeout = setTimeout(() => {
+      fb.classList.remove('jcolore-feedback-visible');
+    }, 1200);
   }
 
   /* ─── LireCouleur Profiles ─── */
@@ -82,7 +106,6 @@
   /* ─── DOM Manipulation ─── */
   function colorizeElement(el) {
     if (!el) return;
-    // Uncolorize previous first
     uncolorize();
 
     const target = getScopeTarget(el);
@@ -152,7 +175,7 @@
     if (!target) return;
 
     const scopeTarget = getScopeTarget(target);
-    if (scopeTarget === currentColorized) return; // already colored
+    if (scopeTarget === currentColorized) return;
 
     colorizeElement(target);
   }
@@ -166,9 +189,7 @@
 
     const scopeTarget = getScopeTarget(target);
 
-    // If clicking the already-colorized element and it's activatable => activate
     if (currentColorized && scopeTarget === currentColorized && isActivatable(target)) {
-      // Second click activates
       uncolorize();
       setTimeout(() => target.click(), 0);
       e.preventDefault();
@@ -181,7 +202,6 @@
       e.stopPropagation();
       colorizeElement(target);
     }
-    // In hover mode, click on activatable just activates after color is already applied
   }
 
   /* ─── Right-click to return off ─── */
@@ -190,6 +210,24 @@
       e.preventDefault();
       e.stopPropagation();
       setState('off');
+    }
+  }
+
+  /* ─── Scope cycling with + / - ─── */
+  function cycleScope(direction) {
+    const idx = SCOPE_ORDER.indexOf(options.colorScope);
+    let newIdx = idx + direction;
+    if (newIdx < 0) newIdx = 0;
+    if (newIdx >= SCOPE_ORDER.length) newIdx = SCOPE_ORDER.length - 1;
+    if (newIdx === idx) return;
+    options.colorScope = SCOPE_ORDER[newIdx];
+    browser.storage.local.set({ colorScope: options.colorScope }).catch(() => {});
+    showScopeFeedback(options.colorScope);
+    // Re-colorize current element with new scope if something was colorized
+    if (currentColorized) {
+      const el = currentColorized;
+      uncolorize();
+      colorizeElement(el);
     }
   }
 
@@ -203,10 +241,20 @@
       return;
     }
 
+    // + and - to cycle scope
+    if (e.key === '+' || e.key === '=') {
+      e.preventDefault();
+      cycleScope(1);
+      return;
+    }
+    if (e.key === '-' || e.key === '_') {
+      e.preventDefault();
+      cycleScope(-1);
+      return;
+    }
+
     if (e.key === 'Tab') {
-      // Switching to keyboard mode
       inputMode = 'keyboard';
-      // On next focus, the focusin handler will colorize
     }
 
     if (e.key === 'Enter' && inputMode === 'keyboard') {
@@ -218,7 +266,6 @@
 
       const scopeTarget = getScopeTarget(target);
 
-      // If already colorized and activatable, activate it
       if (currentColorized && scopeTarget === currentColorized && isActivatable(target)) {
         uncolorize();
         setTimeout(() => target.click(), 0);
@@ -227,7 +274,6 @@
         return;
       }
 
-      // Otherwise colorize
       e.preventDefault();
       e.stopPropagation();
       colorizeElement(target);
@@ -252,13 +298,15 @@
     if (state !== 'active') return;
     if (inputMode === 'keyboard') {
       inputMode = 'mouse';
-      // Don't uncolorize here; the next click/hover will handle it
     }
   }
 
   /* ─── Message Handling ─── */
   browser.runtime.onMessage.addListener((msg) => {
     if (msg.type === 'toggle_colore') toggle();
+    if (msg.type === 'get_state') {
+      return Promise.resolve({ state: state });
+    }
     if (msg.type === 'start_pending' && state === 'off') setState('active');
     if (msg.type === 'options_changed') {
       options = { ...options, ...msg.options };
