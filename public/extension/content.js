@@ -1,19 +1,18 @@
 (() => {
   /* ─── State ─── */
-  let state = 'off'; // off | pending | focus-active | mouse-active
-  let pendingIcon = null;
-  let cursorRing = null;
-  let currentFocusEl = null;
-  let colorizedElements = new Set();
-  let originalContents = new Map();
+  let state = 'off'; // off | active
+  let currentColorized = null; // the currently colorized element
+  let originalContent = null; // innerHTML backup of currentColorized
+  let inputMode = null; // 'mouse' | 'keyboard' — tracks last input method
 
   /* ─── Options ─── */
-  let options = { colorMode: 'syllables-separated', colorScope: 'word' };
+  let options = { colorMode: 'syllables-colored', colorScope: 'sentence', mouseMode: 'click' };
 
   function loadOptions() {
-    browser.storage.local.get(['colorMode', 'colorScope']).then((data) => {
-      options.colorMode = data.colorMode || 'syllables-separated';
-      options.colorScope = data.colorScope || 'word';
+    browser.storage.local.get(['colorMode', 'colorScope', 'mouseMode']).then((data) => {
+      options.colorMode = data.colorMode || 'syllables-colored';
+      options.colorScope = data.colorScope || 'sentence';
+      options.mouseMode = data.mouseMode || 'click';
     }).catch(() => {});
   }
   loadOptions();
@@ -29,31 +28,21 @@
     return false;
   }
 
-  function activateElement(el) {
-    if (el) el.click();
-  }
-
   /* ─── LireCouleur Profiles ─── */
   function getProfile() {
     const mode = options.colorMode;
-    if (mode === 'none') return null;
-
     if (mode === 'syllables-separated') {
       return JSON.parse('{"name":"Syllabes séparées","params":{"novice_reader":true,"SYLLABES_LC":true},"format":{},"process":[{"function":"syllabes","separator":"·"},{"function":"phonemes","format":[{"color":"#999999","phonemes":["#","verb_3p","#_amb"]}]}]}');
     }
-
     if (mode === 'syllables-colored') {
       return JSON.parse('{"name":"Syllabes colorées","params":{"novice_reader":true,"SYLLABES_LC":true},"format":{},"process":[{"function":"alternsyllabes","format":[{"color":"#e53935"},{"color":"#1e88e5"}]},{"function":"phonemes","format":[{"color":"#999999","phonemes":["#","verb_3p","#_amb"]}]}]}');
     }
-
     if (mode === 'phonemes-colored') {
       return JSON.parse(JSON.stringify(getDefaultProfile()));
     }
-
     if (mode === 'custom-colors') {
       return JSON.parse(JSON.stringify(getDefaultProfile()));
     }
-
     return null;
   }
 
@@ -63,54 +52,52 @@
     try {
       const up = new UserProfile(profileJson);
       const tempEl = document.createElement('span');
-      const html = up.toHTML(text, tempEl);
-      return html;
+      return up.toHTML(text, tempEl);
     } catch (e) {
-      console.error('Colore Texte LireCouleur error:', e);
+      console.error('J\'cOLorE LireCouleur error:', e);
       return text;
     }
   }
 
-  /* ─── Scope: find target elements ─── */
-  function getScopeTargets(el) {
+  /* ─── Scope: find target element ─── */
+  function getScopeTarget(el) {
     const scope = options.colorScope;
-    if (scope === 'all') {
-      return Array.from(document.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, td, th, blockquote, figcaption, dt, dd'));
-    }
+    if (scope === 'all') return document.body;
     if (scope === 'paragraph') {
-      const p = el.closest('p, h1, h2, h3, h4, h5, h6, li, blockquote, td, th, div');
-      return p ? [p] : [el];
+      return el.closest('p, h1, h2, h3, h4, h5, h6, li, blockquote, td, th, div') || el;
     }
     if (scope === 'sentence') {
-      // For sentence scope, we colorize the parent element (paragraph-like) containing the target
-      const p = el.closest('p, h1, h2, h3, h4, h5, h6, li, blockquote, td, th, div');
-      return p ? [p] : [el];
+      return el.closest('p, h1, h2, h3, h4, h5, h6, li, blockquote, td, th, div') || el;
     }
-    // word scope: colorize the closest text element
-    return [el];
+    // word
+    return el;
   }
 
   function getTextTarget(el) {
     if (!el || el === document.body || el === document.documentElement) return null;
-    if (el.id && el.id.startsWith('colore-')) return null;
+    if (el.id && el.id.startsWith('jcolore-')) return null;
     return el.closest('p, h1, h2, h3, h4, h5, h6, li, td, th, a, span, label, button, div, blockquote, figcaption');
   }
 
   /* ─── DOM Manipulation ─── */
   function colorizeElement(el) {
-    if (!el || originalContents.has(el)) return;
+    if (!el) return;
+    // Uncolorize previous first
+    uncolorize();
 
-    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null, false);
+    const target = getScopeTarget(el);
+    if (!target) return;
+
+    originalContent = target.innerHTML;
+    currentColorized = target;
+
+    const walker = document.createTreeWalker(target, NodeFilter.SHOW_TEXT, null, false);
     const textNodes = [];
     let node;
     while (node = walker.nextNode()) {
-      if (node.textContent.trim().length > 0) {
-        textNodes.push(node);
-      }
+      if (node.textContent.trim().length > 0) textNodes.push(node);
     }
-
-    if (textNodes.length === 0) return;
-    originalContents.set(el, el.innerHTML);
+    if (textNodes.length === 0) { currentColorized = null; originalContent = null; return; }
 
     for (const textNode of textNodes) {
       const processed = applyLireCouleur(textNode.textContent);
@@ -120,171 +107,89 @@
         textNode.parentNode.replaceChild(span, textNode);
       }
     }
-
-    el.classList.add('colore-highlighted');
-    colorizedElements.add(el);
+    target.classList.add('jcolore-highlighted');
   }
 
-  function colorizeTargets(el) {
-    const targets = getScopeTargets(el);
-    for (const t of targets) {
-      colorizeElement(t);
-    }
-  }
-
-  function uncolorizeElement(el) {
-    if (!el || !originalContents.has(el)) return;
-    el.innerHTML = originalContents.get(el);
-    originalContents.delete(el);
-    el.classList.remove('colore-highlighted');
-    colorizedElements.delete(el);
-  }
-
-  function uncolorizeAll() {
-    for (const [el] of originalContents) {
+  function uncolorize() {
+    if (currentColorized && originalContent !== null) {
       try {
-        el.innerHTML = originalContents.get(el);
-        el.classList.remove('colore-highlighted');
+        currentColorized.innerHTML = originalContent;
+        currentColorized.classList.remove('jcolore-highlighted');
       } catch(e) {}
     }
-    originalContents.clear();
-    colorizedElements.clear();
-  }
-
-  /* ─── Pending Icon ─── */
-  function createPendingIcon() {
-    if (pendingIcon) return;
-    pendingIcon = document.createElement('div');
-    pendingIcon.id = 'colore-pending-icon';
-    pendingIcon.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <text x="6" y="18" font-size="18" font-weight="bold" fill="#e65100" font-family="system-ui">O</text>
-    </svg>`;
-    document.documentElement.appendChild(pendingIcon);
-  }
-
-  function createCursorRing() {
-    if (cursorRing) return;
-    cursorRing = document.createElement('div');
-    cursorRing.id = 'colore-cursor-ring';
-    document.documentElement.appendChild(cursorRing);
-  }
-
-  function positionPendingIcon(el) {
-    if (!pendingIcon || !el) return;
-    const rect = el.getBoundingClientRect();
-    pendingIcon.style.left = (rect.left + rect.width / 2) + 'px';
-    pendingIcon.style.top = (rect.top - 28) + 'px';
-    pendingIcon.style.display = 'block';
-  }
-
-  function hidePendingIcon() {
-    if (pendingIcon) pendingIcon.style.display = 'none';
-  }
-
-  /* ─── Transition Animation ─── */
-  function showTransitionRing(el, callback) {
-    createCursorRing();
-    const rect = el.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
-    cursorRing.style.left = cx + 'px';
-    cursorRing.style.top = cy + 'px';
-    cursorRing.style.display = 'block';
-    cursorRing.style.opacity = '1';
-    setTimeout(() => {
-      cursorRing.style.opacity = '0';
-      setTimeout(() => {
-        cursorRing.style.display = 'none';
-        if (callback) callback();
-      }, 600);
-    }, 1400);
+    currentColorized = null;
+    originalContent = null;
   }
 
   /* ─── State Management ─── */
   function setState(newState) {
     state = newState;
-    document.body.classList.remove('colore-pending');
+    document.body.classList.remove('jcolore-active');
 
     if (state === 'off') {
-      uncolorizeAll();
-      hidePendingIcon();
-      sessionStorage.removeItem('colore_active');
+      uncolorize();
+      inputMode = null;
+      sessionStorage.removeItem('jcolore_active');
       browser.runtime.sendMessage({ type: 'colore_off' }).catch(() => {});
-    } else if (state === 'pending') {
-      document.body.classList.add('colore-pending');
-      uncolorizeAll();
-      createPendingIcon();
-      sessionStorage.setItem('colore_active', 'pending');
+    } else if (state === 'active') {
+      document.body.classList.add('jcolore-active');
+      sessionStorage.setItem('jcolore_active', '1');
       browser.runtime.sendMessage({ type: 'colore_active' }).catch(() => {});
-    } else if (state === 'focus-active') {
-      sessionStorage.setItem('colore_active', 'focus');
-      browser.runtime.sendMessage({ type: 'colore_active' }).catch(() => {});
-      hidePendingIcon();
-    } else if (state === 'mouse-active') {
-      sessionStorage.setItem('colore_active', 'mouse');
-      browser.runtime.sendMessage({ type: 'colore_active' }).catch(() => {});
-      hidePendingIcon();
     }
   }
 
   function toggle() {
-    setState(state === 'off' ? 'pending' : 'off');
+    setState(state === 'off' ? 'active' : 'off');
   }
 
-  /* ─── Focus Mode (Keyboard) ─── */
-  function handleFocusIn(e) {
-    if (state !== 'pending' && state !== 'focus-active') return;
-    const el = e.target;
-    if (!el || el === document.body || el === document.documentElement) return;
-    if (el.id && el.id.startsWith('colore-')) return;
-
-    if (state === 'pending') {
-      positionPendingIcon(el);
-      currentFocusEl = el;
-      return;
-    }
-    currentFocusEl = el;
-  }
-
-  function handleFocusOut() {
-    if (state === 'pending') hidePendingIcon();
-  }
-
-  /* ─── Mouse Mode ─── */
-  function handleMouseClick(e) {
-    if (state === 'pending') {
-      e.preventDefault();
-      e.stopPropagation();
-      setState('mouse-active');
-      return;
-    }
-
-    if (state !== 'mouse-active') return;
+  /* ─── Mouse Handling ─── */
+  function handleMouseMove(e) {
+    if (state !== 'active') return;
+    if (options.mouseMode !== 'hover') return;
+    inputMode = 'mouse';
 
     const target = getTextTarget(e.target);
     if (!target) return;
 
-    if (colorizedElements.has(target)) {
-      if (isActivatable(target)) {
-        uncolorizeElement(target);
-        setTimeout(() => activateElement(target), 0);
-      }
+    const scopeTarget = getScopeTarget(target);
+    if (scopeTarget === currentColorized) return; // already colored
+
+    colorizeElement(target);
+  }
+
+  function handleMouseClick(e) {
+    if (state !== 'active') return;
+    inputMode = 'mouse';
+
+    const target = getTextTarget(e.target);
+    if (!target) return;
+
+    const scopeTarget = getScopeTarget(target);
+
+    // If clicking the already-colorized element and it's activatable => activate
+    if (currentColorized && scopeTarget === currentColorized && isActivatable(target)) {
+      // Second click activates
+      uncolorize();
+      setTimeout(() => target.click(), 0);
       e.preventDefault();
       e.stopPropagation();
       return;
     }
 
-    e.preventDefault();
-    e.stopPropagation();
-    colorizeTargets(target);
-  }
-
-  /* ─── Right-click to return to pending ─── */
-  function handleContextMenu(e) {
-    if (state === 'mouse-active' || state === 'focus-active') {
+    if (options.mouseMode === 'click') {
       e.preventDefault();
       e.stopPropagation();
-      setState('pending');
+      colorizeElement(target);
+    }
+    // In hover mode, click on activatable just activates after color is already applied
+  }
+
+  /* ─── Right-click to return off ─── */
+  function handleContextMenu(e) {
+    if (state === 'active') {
+      e.preventDefault();
+      e.stopPropagation();
+      setState('off');
     }
   }
 
@@ -293,68 +198,94 @@
     if (state === 'off') return;
 
     if (e.key === 'Escape') {
-      if (state === 'focus-active' || state === 'mouse-active') {
-        if (state === 'focus-active' && currentFocusEl) {
-          showTransitionRing(currentFocusEl, () => {});
-        }
-        setState('pending');
-      } else if (state === 'pending') {
-        setState('off');
-      }
+      setState('off');
       e.preventDefault();
       return;
     }
 
-    if (e.key === 'Enter' && state === 'pending') {
-      e.preventDefault();
-      e.stopPropagation();
-      setState('focus-active');
-      if (currentFocusEl) colorizeTargets(currentFocusEl);
-      return;
+    if (e.key === 'Tab') {
+      // Switching to keyboard mode
+      inputMode = 'keyboard';
+      // On next focus, the focusin handler will colorize
     }
 
-    if (e.key === 'Enter' && state === 'focus-active') {
-      if (!currentFocusEl) return;
-      if (colorizedElements.has(currentFocusEl)) {
-        if (isActivatable(currentFocusEl)) {
-          e.preventDefault();
-          e.stopPropagation();
-          uncolorizeElement(currentFocusEl);
-          setTimeout(() => activateElement(currentFocusEl), 0);
-        }
+    if (e.key === 'Enter' && inputMode === 'keyboard') {
+      const el = document.activeElement;
+      if (!el || el === document.body) return;
+
+      const target = getTextTarget(el);
+      if (!target) return;
+
+      const scopeTarget = getScopeTarget(target);
+
+      // If already colorized and activatable, activate it
+      if (currentColorized && scopeTarget === currentColorized && isActivatable(target)) {
+        uncolorize();
+        setTimeout(() => target.click(), 0);
+        e.preventDefault();
+        e.stopPropagation();
         return;
       }
+
+      // Otherwise colorize
       e.preventDefault();
       e.stopPropagation();
-      colorizeTargets(currentFocusEl);
+      colorizeElement(target);
+    }
+  }
+
+  /* ─── Focus Handling ─── */
+  function handleFocusIn(e) {
+    if (state !== 'active') return;
+    if (inputMode !== 'keyboard') return;
+
+    const el = e.target;
+    if (!el || el === document.body || el === document.documentElement) return;
+    if (el.id && el.id.startsWith('jcolore-')) return;
+
+    const target = getTextTarget(el);
+    if (target) colorizeElement(target);
+  }
+
+  /* ─── When mouse moves after keyboard, switch mode ─── */
+  function handleMouseMoveSwitch(e) {
+    if (state !== 'active') return;
+    if (inputMode === 'keyboard') {
+      inputMode = 'mouse';
+      // Don't uncolorize here; the next click/hover will handle it
     }
   }
 
   /* ─── Message Handling ─── */
   browser.runtime.onMessage.addListener((msg) => {
     if (msg.type === 'toggle_colore') toggle();
-    if (msg.type === 'start_pending' && state === 'off') setState('pending');
+    if (msg.type === 'start_pending' && state === 'off') setState('active');
     if (msg.type === 'options_changed') {
-      options = msg.options;
+      options = { ...options, ...msg.options };
     }
     return false;
   });
 
   browser.storage.onChanged.addListener((changes) => {
-    if (changes.colorMode) options.colorMode = changes.colorMode.newValue || 'syllables-separated';
-    if (changes.colorScope) options.colorScope = changes.colorScope.newValue || 'word';
+    if (changes.colorMode) options.colorMode = changes.colorMode.newValue || 'syllables-colored';
+    if (changes.colorScope) options.colorScope = changes.colorScope.newValue || 'sentence';
+    if (changes.mouseMode) options.mouseMode = changes.mouseMode.newValue || 'click';
   });
 
   /* ─── Event Listeners ─── */
   document.addEventListener('focusin', handleFocusIn, true);
-  document.addEventListener('focusout', handleFocusOut, true);
   document.addEventListener('click', handleMouseClick, true);
+  document.addEventListener('mouseover', handleMouseMove, true);
+  document.addEventListener('mousemove', handleMouseMoveSwitch, true);
   document.addEventListener('contextmenu', handleContextMenu, true);
   document.addEventListener('keydown', handleKeyDown, true);
 
   /* ─── Init ─── */
-  const saved = sessionStorage.getItem('colore_active');
-  if (saved === 'pending' || saved === 'focus' || saved === 'mouse') {
-    setState('pending');
-  }
+  const saved = sessionStorage.getItem('jcolore_active');
+  if (saved === '1') setState('active');
 })();
+
+/* ─── Default Profile ─── */
+function getDefaultProfile() {
+  return JSON.parse('{"name":"Syllabes séparées","params":{"novice_reader":true,"SYLLABES_LC":true},"format":{},"process":[{"function":"syllabes","separator":"·"},{"function":"phonemes","format":[{"color":"#999999","phonemes":["#","verb_3p","#_amb"]}]}]}');
+}

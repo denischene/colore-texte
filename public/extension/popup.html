@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <style>
+    body {
+      font: 13px/1.5 system-ui, sans-serif;
+      margin: 0;
+      padding: 12px;
+      background: #f9f9f9;
+      color: #333;
+      width: 340px;
+    }
+    h3 { margin: 0 0 8px; font-size: 13px; color: #222; font-weight: 600; }
+    .popup-row {
+      display: flex;
+      gap: 10px;
+    }
+    .popup-col {
+      flex: 1;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 10px;
+    }
+    .option-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 0;
+    }
+    .option-row label {
+      font-size: 12px;
+      cursor: pointer;
+      flex: 1;
+    }
+    .option-row input[type="radio"] {
+      width: 14px;
+      height: 14px;
+      accent-color: #e65100;
+      cursor: pointer;
+    }
+    #activate-btn {
+      display: block;
+      width: 100%;
+      margin-top: 10px;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      background: #e65100;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    #activate-btn:hover { background: #bf4400; }
+    #activate-btn:focus { outline: 2px solid #e65100; outline-offset: 2px; }
+  </style>
+</head>
+<body>
+  <div class="popup-row">
+    <div class="popup-col">
+      <h3>Mode de coloration</h3>
+      <div class="option-row">
+        <input type="radio" name="colorMode" id="pm-syl-sep" value="syllables-separated">
+        <label for="pm-syl-sep">Syllabes séparées</label>
+      </div>
+      <div class="option-row">
+        <input type="radio" name="colorMode" id="pm-syl-col" value="syllables-colored">
+        <label for="pm-syl-col">Syllabes colorées</label>
+      </div>
+      <div class="option-row">
+        <input type="radio" name="colorMode" id="pm-phon" value="phonemes-colored">
+        <label for="pm-phon">Prononciations colorées</label>
+      </div>
+      <div class="option-row">
+        <input type="radio" name="colorMode" id="pm-custom" value="custom-colors">
+        <label for="pm-custom">Couleurs personnalisées</label>
+      </div>
+    </div>
+    <div class="popup-col">
+      <h3>Portée</h3>
+      <div class="option-row">
+        <input type="radio" name="colorScope" id="ps-word" value="word">
+        <label for="ps-word">Mot pointé</label>
+      </div>
+      <div class="option-row">
+        <input type="radio" name="colorScope" id="ps-sentence" value="sentence">
+        <label for="ps-sentence">Phrase pointée</label>
+      </div>
+      <div class="option-row">
+        <input type="radio" name="colorScope" id="ps-paragraph" value="paragraph">
+        <label for="ps-paragraph">Paragraphe</label>
+      </div>
+      <div class="option-row">
+        <input type="radio" name="colorScope" id="ps-all" value="all">
+        <label for="ps-all">Tout</label>
+      </div>
+    </div>
+  </div>
+  <button id="activate-btn">Activer</button>
+  <script src="popup.js"></script>
+</body>
+</html>

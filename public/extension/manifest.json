@@ -1,10 +1,10 @@
 {
   "manifest_version": 2,
-  "name": "Colore Texte",
-  "version": "2.0.0",
+  "name": "J'cOLorE le texte",
+  "version": "2.1.0",
   "description": "Extension Firefox pour faciliter la lecture des syllabes et des sons",
   "author": "Chêne Denis",
-  "homepage_url": "https://loupe-zoom.lovable.app",
+  "homepage_url": "https://colore-texte.lovable.app",
   "permissions": ["activeTab", "<all_urls>", "storage"],
   "background": {
     "scripts": ["background.js"],
@@ -15,7 +15,8 @@
       "48": "icon.png",
       "128": "icon.png"
     },
-    "default_title": "Colore Texte"
+    "default_title": "J'cOLorE le texte",
+    "default_popup": "popup.html"
   },
   "options_ui": {
     "page": "options.html",
@@ -24,9 +25,9 @@
   "commands": {
     "toggle-colore": {
       "suggested_key": {
-        "default": "Ctrl+Shift+O"
+        "default": "Ctrl+Shift+J"
       },
-      "description": "Activer/désactiver Colore Texte"
+      "description": "Activer/désactiver J'cOLorE le texte"
     }
   },
   "content_scripts": [

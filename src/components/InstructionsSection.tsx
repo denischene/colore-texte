@@ -12,7 +12,7 @@ const instructions = [
     icon: Keyboard,
     title: "Mode clavier",
     steps: [
-      <><Kbd>Ctrl</Kbd>+<Kbd>Maj</Kbd>+<Kbd>O</Kbd> pour activer et désactiver l'extension</>,
+      <><Kbd>Ctrl</Kbd>+<Kbd>Maj</Kbd>+<Kbd>J</Kbd> pour activer et désactiver l'extension</>,
       <><Kbd>Tab</Kbd> pour naviguer entre les éléments</>,
       <><Kbd>Entrée</Kbd> pour coloriser l'élément focusé</>,
       <>Si l'élément est activable (lien, bouton), un 2e <Kbd>Entrée</Kbd> l'active</>,
@@ -23,8 +23,8 @@ const instructions = [
     icon: Mouse,
     title: "Mode souris",
     steps: [
-      <>Cliquer sur l'icône <span className="font-bold text-primary">O</span> dans la barre d'outils</>,
-      <>Cliquer sur un élément pour le coloriser</>,
+      <>Cliquer sur l'icône <span className="font-bold text-primary">J</span> dans la barre d'outils pour activer</>,
+      <>Cliquer ou survoler un élément pour le coloriser (selon le réglage)</>,
       <>Si l'élément est activable, un 2e clic l'active (lien, bouton…)</>,
       <>Clic droit pour revenir en mode attente</>,
     ],
@@ -94,7 +94,7 @@ const InstructionsSection = () => {
         </p>
         <Button onClick={handleDownload} className="gap-2">
           <Download className="w-4 h-4" aria-hidden="true" />
-          Télécharger Colore Texte
+          Télécharger J'cOLorE le texte
         </Button>
       </div>
     </section>
