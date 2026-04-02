@@ -1,6 +1,7 @@
 import SyllabifiedText from "../components/SyllabifiedText";
 import DemoSection from "../components/DemoSection";
 import InstructionsSection from "../components/InstructionsSection";
+import paletteIcon from "../assets/palette-icon.png";
 
 const Index = () => {
   return (
@@ -9,14 +10,14 @@ const Index = () => {
       <header className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-highlight/40 to-transparent pointer-events-none" />
         <div className="relative max-w-4xl mx-auto px-6 pt-16 pb-12 md:pt-24 md:pb-16 text-center">
-          {/* Icon */}
-          <div
-            className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-primary text-primary-foreground mb-8 shadow-lg animate-fade-up"
-            role="img"
-            aria-label="Logo J'cOLorE"
-          >
-            <span className="text-2xl font-display font-bold leading-tight">J'cOL<br/>orE</span>
-          </div>
+          {/* Logo palette */}
+          <img
+            src={paletteIcon}
+            alt="Logo J'cOLorE — palette de peintre"
+            width={80}
+            height={80}
+            className="mx-auto mb-8 animate-fade-up drop-shadow-lg"
+          />
 
           <h1
             className="text-4xl md:text-6xl font-display font-extrabold text-foreground mb-4 animate-fade-up"
