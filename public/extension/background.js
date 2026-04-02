@@ -1,4 +1,4 @@
-// Track which tabs have colore active/pending
+// Track which tabs have colore active
 const activeTabs = new Set();
 
 browser.runtime.onMessage.addListener((msg, sender) => {
@@ -9,11 +9,6 @@ browser.runtime.onMessage.addListener((msg, sender) => {
     activeTabs.delete(sender.tab.id);
   }
   return false;
-});
-
-// Toolbar button click toggles colore
-browser.browserAction.onClicked.addListener((tab) => {
-  browser.tabs.sendMessage(tab.id, { type: 'toggle_colore' }).catch(() => {});
 });
 
 // Keyboard command
