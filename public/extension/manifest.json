@@ -44,6 +44,9 @@
       "css": ["colore.css"]
     }
   ],
+  "web_accessible_resources": [
+    "fonts/*"
+  ],
   "icons": {
     "48": "icon.png",
     "128": "icon.png"

@@ -84,20 +84,23 @@ const InstructionsSection = () => {
         ))}
       </div>
 
-      <div className="mt-8 rounded-xl border bg-highlight/30 p-6 text-center" role="region" aria-label="Téléchargement">
+      <div className="mt-8 rounded-xl border bg-highlight/30 p-6" role="region" aria-label="Installation">
         <div className="flex items-center justify-center gap-3 mb-3">
           <Download className="w-5 h-5 text-primary" aria-hidden="true" />
           <h3 className="font-display font-semibold text-foreground">Télécharger & Installer</h3>
         </div>
-        <p className="text-sm text-muted-foreground font-body max-w-md mx-auto mb-4">
-          Extension Firefox — téléchargez le fichier ZIP puis chargez-le via{" "}
-          <code className="px-1.5 py-0.5 rounded bg-secondary text-sm">about:debugging</code> →
-          « Charger un module temporaire » → sélectionner <code className="px-1.5 py-0.5 rounded bg-secondary text-sm">manifest.json</code>.
-        </p>
-        <Button onClick={handleDownload} className="gap-2">
-          <Download className="w-4 h-4" aria-hidden="true" />
-          Télécharger J'cOLorE le texte
-        </Button>
+        <div className="text-sm text-muted-foreground font-body max-w-md mx-auto mb-4 space-y-1">
+          <p className="font-semibold text-foreground">Installation :</p>
+          <p>Extension Firefox – Ouvrez <code className="px-1.5 py-0.5 rounded bg-secondary text-sm">about:debugging#/runtime/this-firefox</code></p>
+          <p>Cliquez « Charger un module complémentaire temporaire »</p>
+          <p>Sélectionnez le fichier <code className="px-1.5 py-0.5 rounded bg-secondary text-sm">manifest.json</code> dans le dossier dézippé</p>
+        </div>
+        <div className="text-center">
+          <Button onClick={handleDownload} className="gap-2">
+            <Download className="w-4 h-4" aria-hidden="true" />
+            Télécharger J'cOLorE le texte
+          </Button>
+        </div>
       </div>
     </section>
   );
