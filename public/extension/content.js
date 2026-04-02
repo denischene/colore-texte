@@ -6,15 +6,39 @@
   let inputMode = null; // 'mouse' | 'keyboard' — tracks last input method
 
   /* ─── Options ─── */
-  let options = { colorMode: 'syllables-colored', colorScope: 'sentence', mouseMode: 'click' };
+  let options = { colorMode: 'syllables-colored', colorScope: 'sentence', mouseMode: 'click', fontFamily: 'none' };
 
   const SCOPE_ORDER = ['word', 'sentence', 'paragraph', 'all'];
 
+  /* ─── Font injection ─── */
+  let fontStyleEl = null;
+  function applyFont() {
+    if (!fontStyleEl) {
+      fontStyleEl = document.createElement('style');
+      fontStyleEl.id = 'jcolore-font-style';
+      document.head.appendChild(fontStyleEl);
+    }
+    const font = options.fontFamily;
+    if (font === 'accessible-dfa') {
+      fontStyleEl.textContent = `
+        @font-face { font-family: 'Accessible DfA'; src: url('${browser.runtime.getURL("fonts/AccessibleDfA-VF.ttf")}') format('truetype'); font-weight: 100 900; }
+        body.jcolore-active, body.jcolore-active * { font-family: 'Accessible DfA', system-ui, sans-serif !important; }
+      `;
+    } else if (font === 'belle-allure') {
+      fontStyleEl.textContent = `
+        body.jcolore-active, body.jcolore-active * { font-family: 'Belle Allure', cursive !important; }
+      `;
+    } else {
+      fontStyleEl.textContent = '';
+    }
+  }
+
   function loadOptions() {
-    browser.storage.local.get(['colorMode', 'colorScope', 'mouseMode']).then((data) => {
+    browser.storage.local.get(['colorMode', 'colorScope', 'mouseMode', 'fontFamily']).then((data) => {
       options.colorMode = data.colorMode || 'syllables-colored';
       options.colorScope = data.colorScope || 'sentence';
       options.mouseMode = data.mouseMode || 'click';
+      options.fontFamily = data.fontFamily || 'none';
     }).catch(() => {});
   }
   loadOptions();
@@ -152,10 +176,12 @@
     if (state === 'off') {
       uncolorize();
       inputMode = null;
+      if (fontStyleEl) fontStyleEl.textContent = '';
       sessionStorage.removeItem('jcolore_active');
       browser.runtime.sendMessage({ type: 'colore_off' }).catch(() => {});
     } else if (state === 'active') {
       document.body.classList.add('jcolore-active');
+      applyFont();
       sessionStorage.setItem('jcolore_active', '1');
       browser.runtime.sendMessage({ type: 'colore_active' }).catch(() => {});
     }
@@ -223,7 +249,6 @@
     options.colorScope = SCOPE_ORDER[newIdx];
     browser.storage.local.set({ colorScope: options.colorScope }).catch(() => {});
     showScopeFeedback(options.colorScope);
-    // Re-colorize current element with new scope if something was colorized
     if (currentColorized) {
       const el = currentColorized;
       uncolorize();
@@ -241,7 +266,6 @@
       return;
     }
 
-    // + and - to cycle scope
     if (e.key === '+' || e.key === '=') {
       e.preventDefault();
       cycleScope(1);
@@ -310,6 +334,7 @@
     if (msg.type === 'start_pending' && state === 'off') setState('active');
     if (msg.type === 'options_changed') {
       options = { ...options, ...msg.options };
+      if (state === 'active') applyFont();
     }
     return false;
   });
@@ -318,6 +343,10 @@
     if (changes.colorMode) options.colorMode = changes.colorMode.newValue || 'syllables-colored';
     if (changes.colorScope) options.colorScope = changes.colorScope.newValue || 'sentence';
     if (changes.mouseMode) options.mouseMode = changes.mouseMode.newValue || 'click';
+    if (changes.fontFamily) {
+      options.fontFamily = changes.fontFamily.newValue || 'none';
+      if (state === 'active') applyFont();
+    }
   });
 
   /* ─── Event Listeners ─── */

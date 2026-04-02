@@ -16,7 +16,7 @@ const Index = () => {
             alt="Logo J'cOLorE — palette de peintre"
             width={80}
             height={80}
-            className="mx-auto mb-8 animate-fade-up drop-shadow-lg"
+            className="mx-auto mb-8 animate-fade-up drop-shadow-lg rounded-xl"
           />
 
           <h1
@@ -38,7 +38,7 @@ const Index = () => {
             style={{ animationDelay: "0.3s" }}
           >
             <span className="px-3 py-1.5 rounded-full bg-secondary text-secondary-foreground text-sm font-display font-medium">
-              🎯 Accessibilité
+              👁️ Accessibilité
             </span>
             <span className="px-3 py-1.5 rounded-full bg-secondary text-secondary-foreground text-sm font-display font-medium">
               🇫🇷 Français

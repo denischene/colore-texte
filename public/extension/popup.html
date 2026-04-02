@@ -48,6 +48,13 @@
       padding: 10px;
     }
     .mouse-section .option-row { display: inline-flex; margin-right: 12px; }
+    .font-section {
+      margin-top: 10px;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 10px;
+    }
     .shortcut-hint {
       margin-top: 8px;
       font-size: 11px;
@@ -133,6 +140,22 @@
     <div class="option-row">
       <input type="radio" name="mouseMode" id="pm-click" value="click">
       <label for="pm-click">Colorer au clic</label>
+    </div>
+  </div>
+
+  <div class="font-section">
+    <h3>Police de caractères</h3>
+    <div class="option-row">
+      <input type="radio" name="fontFamily" id="pf-none" value="none">
+      <label for="pf-none">Sans modification</label>
+    </div>
+    <div class="option-row">
+      <input type="radio" name="fontFamily" id="pf-accessible" value="accessible-dfa">
+      <label for="pf-accessible">Accessible-DfA</label>
+    </div>
+    <div class="option-row">
+      <input type="radio" name="fontFamily" id="pf-belleallure" value="belle-allure">
+      <label for="pf-belleallure">Belle Allure</label>
     </div>
   </div>
 
