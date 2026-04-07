@@ -42,7 +42,7 @@ function updateButtonState() {
   browser.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
     if (tabs[0]) {
       browser.tabs.sendMessage(tabs[0].id, { type: 'get_state' }).then((response) => {
-        if (response && response.state === 'active') {
+        if (response && (response.state === 'active' || response.state === 'pending')) {
           btn.textContent = 'Désactiver';
           btn.classList.add('active-state');
         } else {

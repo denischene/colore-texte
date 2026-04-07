@@ -1,47 +1,57 @@
 import { useState } from "react";
-import SyllabifiedText from "./SyllabifiedText";
 
 const DEMO_TEXT =
   "La lecture est une activité fondamentale qui permet de découvrir le monde et d'enrichir ses connaissances.";
 
 /* ─── Syllable splitting (French heuristic) ─── */
 const VOWELS = "aeiouyàâäéèêëïîôùûüœæAEIOUYÀÂÄÉÈÊËÏÎÔÙÛÜŒÆ";
+const CLUSTERS = [
+  "bl","br","ch","cl","cr","dr","fl","fr","gl","gr",
+  "ph","pl","pr","qu","sc","sk","sl","sm","sn","sp",
+  "st","sw","th","tr","vr","wr",
+];
 function isVowel(ch: string) { return VOWELS.includes(ch); }
 
 function splitSyllables(word: string): string[] {
   if (word.length <= 2) return [word];
-  const syllables: string[] = [];
-  let current = "";
+  const splits: number[] = [];
   for (let i = 0; i < word.length; i++) {
-    const ch = word[i];
-    current += ch;
-    if (i === word.length - 1) {
-      if (syllables.length > 0 && current.length === 1 && !isVowel(ch)) {
-        syllables[syllables.length - 1] += current;
-      } else { syllables.push(current); }
-      current = ""; continue;
-    }
-    const next = word[i + 1];
-    if (isVowel(ch) && !isVowel(next) && i + 2 < word.length && isVowel(word[i + 2])) {
-      syllables.push(current); current = ""; continue;
-    }
-    if (!isVowel(ch) && !isVowel(next) && current.length > 1) {
-      const clusters = ["bl","br","ch","cl","cr","dr","fl","fr","gl","gr","ph","pl","pr","qu","sc","sk","sl","sm","sn","sp","st","sw","th","tr","vr","wr"];
-      if (!clusters.includes((ch + next).toLowerCase())) {
-        syllables.push(current); current = ""; continue;
+    if (!isVowel(word[i])) continue;
+    let j = i + 1;
+    while (j < word.length && !isVowel(word[j])) j++;
+    if (j >= word.length) continue;
+    const numConsonants = j - i - 1;
+    if (numConsonants === 0) continue;
+    if (numConsonants === 1) {
+      splits.push(i + 1);
+    } else if (numConsonants === 2) {
+      const pair = (word[j - 2] + word[j - 1]).toLowerCase();
+      if (CLUSTERS.includes(pair)) {
+        splits.push(i + 1);
+      } else {
+        splits.push(i + 2);
+      }
+    } else {
+      const lastTwo = (word[j - 2] + word[j - 1]).toLowerCase();
+      if (CLUSTERS.includes(lastTwo)) {
+        splits.push(j - 2);
+      } else {
+        splits.push(j - 1);
       }
     }
   }
-  if (current) {
-    if (syllables.length > 0 && current.length === 1) syllables[syllables.length - 1] += current;
-    else syllables.push(current);
+  if (splits.length === 0) return [word];
+  const uniqueSplits = [...new Set(splits)].sort((a, b) => a - b);
+  const syllables: string[] = [];
+  let prev = 0;
+  for (const s of uniqueSplits) {
+    if (s > prev && s < word.length) {
+      syllables.push(word.slice(prev, s));
+      prev = s;
+    }
   }
-  const merged: string[] = [];
-  for (const s of syllables) {
-    if (merged.length > 0 && s.length === 1 && !isVowel(s)) merged[merged.length - 1] += s;
-    else merged.push(s);
-  }
-  return merged.length > 0 ? merged : [word];
+  syllables.push(word.slice(prev));
+  return syllables.filter(s => s.length > 0);
 }
 
 /* ─── Coloring renderers ─── */

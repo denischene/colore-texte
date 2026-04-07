@@ -5,6 +5,9 @@ browser.runtime.onMessage.addListener((msg, sender) => {
   if (msg.type === 'colore_active' && sender.tab) {
     activeTabs.add(sender.tab.id);
   }
+  if (msg.type === 'colore_pending' && sender.tab) {
+    activeTabs.add(sender.tab.id); // still considered active
+  }
   if (msg.type === 'colore_off' && sender.tab) {
     activeTabs.delete(sender.tab.id);
   }

@@ -1,13 +1,12 @@
 (() => {
   /* ─── State ─── */
-  let state = 'off'; // off | active
-  let currentColorized = null; // the currently colorized element
-  let originalContent = null; // innerHTML backup of currentColorized
-  let inputMode = null; // 'mouse' | 'keyboard' — tracks last input method
+  let state = 'off'; // off | active | pending
+  let currentColorized = null;
+  let inputMode = null; // 'mouse' | 'keyboard'
+  let hasColorizedOnce = false; // after first Enter, Tab auto-colorizes
 
   /* ─── Options ─── */
   let options = { colorMode: 'syllables-colored', colorScope: 'sentence', mouseMode: 'click', fontFamily: 'none' };
-
   const SCOPE_ORDER = ['word', 'sentence', 'paragraph', 'all'];
 
   /* ─── Font injection ─── */
@@ -44,17 +43,20 @@
   loadOptions();
 
   /* ─── Helpers ─── */
-  function isActivatable(el) {
-    if (!el) return false;
+  function getActivatableElement(el) {
+    if (!el) return null;
     const tag = el.tagName.toLowerCase();
-    if (tag === 'a' && el.hasAttribute('href')) return true;
-    if (tag === 'button') return true;
-    if (tag === 'input' && ['submit', 'button', 'reset'].includes(el.type)) return true;
-    if (el.getAttribute('role') === 'button' || el.getAttribute('role') === 'link') return true;
-    return false;
+    if (tag === 'a' && el.hasAttribute('href')) return el;
+    if (tag === 'button') return el;
+    if (tag === 'input' && ['submit', 'button', 'reset'].includes(el.type)) return el;
+    if (el.getAttribute('role') === 'button' || el.getAttribute('role') === 'link') return el;
+    // Walk up to find activatable ancestor (handles link-clickarea__link etc.)
+    const ancestor = el.closest('a[href], button, [role="button"], [role="link"], input[type="submit"], input[type="button"]');
+    if (ancestor) return ancestor;
+    return null;
   }
 
-  /* ─── Scope labels for feedback ─── */
+  /* ─── Scope labels ─── */
   const SCOPE_LABELS = { word: 'Mot', sentence: 'Phrase', paragraph: 'Paragraphe', all: 'Tout' };
 
   /* ─── Feedback overlay ─── */
@@ -111,14 +113,10 @@
   function getScopeTarget(el) {
     const scope = options.colorScope;
     if (scope === 'all') return document.body;
-    if (scope === 'paragraph') {
+    if (scope === 'paragraph' || scope === 'sentence') {
       return el.closest('p, h1, h2, h3, h4, h5, h6, li, blockquote, td, th, div') || el;
     }
-    if (scope === 'sentence') {
-      return el.closest('p, h1, h2, h3, h4, h5, h6, li, blockquote, td, th, div') || el;
-    }
-    // word
-    return el;
+    return el; // word
   }
 
   function getTextTarget(el) {
@@ -127,15 +125,13 @@
     return el.closest('p, h1, h2, h3, h4, h5, h6, li, td, th, a, span, label, button, div, blockquote, figcaption');
   }
 
-  /* ─── DOM Manipulation ─── */
+  /* ─── DOM Manipulation (surgical – preserves focusable elements) ─── */
   function colorizeElement(el) {
     if (!el) return;
     uncolorize();
 
     const target = getScopeTarget(el);
     if (!target) return;
-
-    originalContent = target.innerHTML;
     currentColorized = target;
 
     const walker = document.createTreeWalker(target, NodeFilter.SHOW_TEXT, null, false);
@@ -144,12 +140,14 @@
     while (node = walker.nextNode()) {
       if (node.textContent.trim().length > 0) textNodes.push(node);
     }
-    if (textNodes.length === 0) { currentColorized = null; originalContent = null; return; }
+    if (textNodes.length === 0) { currentColorized = null; return; }
 
     for (const textNode of textNodes) {
       const processed = applyLireCouleur(textNode.textContent);
       if (processed !== textNode.textContent) {
         const span = document.createElement('span');
+        span.className = 'jcolore-inserted';
+        span.setAttribute('data-jcolore-original', textNode.textContent);
         span.innerHTML = processed;
         textNode.parentNode.replaceChild(span, textNode);
       }
@@ -158,14 +156,17 @@
   }
 
   function uncolorize() {
-    if (currentColorized && originalContent !== null) {
-      try {
-        currentColorized.innerHTML = originalContent;
-        currentColorized.classList.remove('jcolore-highlighted');
-      } catch(e) {}
-    }
+    if (!currentColorized) return;
+    try {
+      const inserted = currentColorized.querySelectorAll('.jcolore-inserted');
+      for (const span of inserted) {
+        const text = document.createTextNode(span.getAttribute('data-jcolore-original') || span.textContent);
+        span.parentNode.replaceChild(text, span);
+      }
+      currentColorized.classList.remove('jcolore-highlighted');
+      currentColorized.normalize();
+    } catch(e) {}
     currentColorized = null;
-    originalContent = null;
   }
 
   /* ─── State Management ─── */
@@ -176,6 +177,7 @@
     if (state === 'off') {
       uncolorize();
       inputMode = null;
+      hasColorizedOnce = false;
       if (fontStyleEl) fontStyleEl.textContent = '';
       sessionStorage.removeItem('jcolore_active');
       browser.runtime.sendMessage({ type: 'colore_off' }).catch(() => {});
@@ -184,11 +186,18 @@
       applyFont();
       sessionStorage.setItem('jcolore_active', '1');
       browser.runtime.sendMessage({ type: 'colore_active' }).catch(() => {});
+    } else if (state === 'pending') {
+      document.body.classList.add('jcolore-active'); // keep J cursor
+      uncolorize();
+      applyFont();
+      sessionStorage.setItem('jcolore_active', 'pending');
+      browser.runtime.sendMessage({ type: 'colore_pending' }).catch(() => {});
     }
   }
 
   function toggle() {
-    setState(state === 'off' ? 'active' : 'off');
+    if (state === 'off') setState('active');
+    else setState('off');
   }
 
   /* ─── Mouse Handling ─── */
@@ -207,35 +216,67 @@
   }
 
   function handleMouseClick(e) {
+    if (state === 'pending') {
+      // Resume active on left click
+      setState('active');
+      inputMode = 'mouse';
+      const target = getTextTarget(e.target);
+      if (target) {
+        if (options.mouseMode === 'hover') {
+          colorizeElement(target);
+        } else {
+          e.preventDefault();
+          e.stopPropagation();
+          colorizeElement(target);
+        }
+      }
+      return;
+    }
+
     if (state !== 'active') return;
     inputMode = 'mouse';
 
     const target = getTextTarget(e.target);
     if (!target) return;
-
     const scopeTarget = getScopeTarget(target);
 
-    if (currentColorized && scopeTarget === currentColorized && isActivatable(target)) {
-      uncolorize();
-      setTimeout(() => target.click(), 0);
-      e.preventDefault();
-      e.stopPropagation();
+    if (options.mouseMode === 'hover') {
+      // Hover mode: elements already colorized on hover
+      // Click activates activatable elements
+      if (currentColorized) {
+        const activatable = getActivatableElement(e.target);
+        if (activatable) {
+          uncolorize();
+          // Let click through to activate
+          return;
+        }
+      }
       return;
     }
 
-    if (options.mouseMode === 'click') {
-      e.preventDefault();
-      e.stopPropagation();
-      colorizeElement(target);
+    // Click mode
+    if (currentColorized && scopeTarget === currentColorized) {
+      // Second click on same scope — activate if activatable
+      const activatable = getActivatableElement(e.target);
+      if (activatable) {
+        uncolorize();
+        return; // let click through
+      }
+      return; // not activatable, keep colorized
     }
+
+    // First click — colorize
+    e.preventDefault();
+    e.stopPropagation();
+    colorizeElement(target);
   }
 
-  /* ─── Right-click to return off ─── */
+  /* ─── Right-click → pending ─── */
   function handleContextMenu(e) {
     if (state === 'active') {
       e.preventDefault();
       e.stopPropagation();
-      setState('off');
+      setState('pending');
     }
   }
 
@@ -261,24 +302,41 @@
     if (state === 'off') return;
 
     if (e.key === 'Escape') {
-      setState('off');
-      e.preventDefault();
+      if (state === 'active') {
+        setState('pending');
+        e.preventDefault();
+      }
       return;
     }
 
-    if (e.key === '+' || e.key === '=') {
-      e.preventDefault();
-      cycleScope(1);
+    if (state === 'pending') {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        e.stopPropagation();
+        setState('active');
+        inputMode = 'keyboard';
+        hasColorizedOnce = true;
+        const el = document.activeElement;
+        if (el && el !== document.body) {
+          const target = getTextTarget(el);
+          if (target) colorizeElement(target);
+        }
+      }
+      if (e.key === 'Tab') {
+        inputMode = 'keyboard';
+        // Let tab through naturally
+      }
       return;
     }
-    if (e.key === '-' || e.key === '_') {
-      e.preventDefault();
-      cycleScope(-1);
-      return;
-    }
+
+    // state === 'active'
+    if (e.key === '+' || e.key === '=') { e.preventDefault(); cycleScope(1); return; }
+    if (e.key === '-' || e.key === '_') { e.preventDefault(); cycleScope(-1); return; }
 
     if (e.key === 'Tab') {
       inputMode = 'keyboard';
+      // Don't prevent default — let natural tab order work
+      return;
     }
 
     if (e.key === 'Enter' && inputMode === 'keyboard') {
@@ -290,16 +348,20 @@
 
       const scopeTarget = getScopeTarget(target);
 
-      if (currentColorized && scopeTarget === currentColorized && isActivatable(target)) {
-        uncolorize();
-        setTimeout(() => target.click(), 0);
-        e.preventDefault();
-        e.stopPropagation();
+      if (currentColorized && scopeTarget === currentColorized) {
+        // Already colorized — try to activate
+        const activatable = getActivatableElement(el);
+        if (activatable) {
+          uncolorize();
+          return; // let Enter through to activate
+        }
         return;
       }
 
+      // First Enter — colorize
       e.preventDefault();
       e.stopPropagation();
+      hasColorizedOnce = true;
       colorizeElement(target);
     }
   }
@@ -308,18 +370,25 @@
   function handleFocusIn(e) {
     if (state !== 'active') return;
     if (inputMode !== 'keyboard') return;
+    if (!hasColorizedOnce) return; // Don't auto-colorize until first Enter
 
     const el = e.target;
     if (!el || el === document.body || el === document.documentElement) return;
     if (el.id && el.id.startsWith('jcolore-')) return;
 
     const target = getTextTarget(el);
-    if (target) colorizeElement(target);
+    if (target) {
+      requestAnimationFrame(() => {
+        if (state === 'active' && inputMode === 'keyboard') {
+          colorizeElement(target);
+        }
+      });
+    }
   }
 
   /* ─── When mouse moves after keyboard, switch mode ─── */
   function handleMouseMoveSwitch(e) {
-    if (state !== 'active') return;
+    if (state !== 'active' && state !== 'pending') return;
     if (inputMode === 'keyboard') {
       inputMode = 'mouse';
     }
@@ -360,6 +429,7 @@
   /* ─── Init ─── */
   const saved = sessionStorage.getItem('jcolore_active');
   if (saved === '1') setState('active');
+  else if (saved === 'pending') setState('pending');
 })();
 
 /* ─── Default Profile ─── */
