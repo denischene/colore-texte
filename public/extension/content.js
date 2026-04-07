@@ -352,8 +352,11 @@
         // Already colorized — try to activate
         const activatable = getActivatableElement(el);
         if (activatable) {
+          e.preventDefault();
+          e.stopPropagation();
           uncolorize();
-          return; // let Enter through to activate
+          // Explicitly activate the element after DOM restoration
+          activatable.click();
         }
         return;
       }
