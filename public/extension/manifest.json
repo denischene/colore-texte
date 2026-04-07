@@ -15,7 +15,7 @@
       "48": "icon.png",
       "128": "icon.png"
     },
-    "default_title": "J'cOLorE le texte",
+    "default_title": "J'cOLorE le texte (Ctrl+Maj+J)",
     "default_popup": "popup.html"
   },
   "options_ui": {
