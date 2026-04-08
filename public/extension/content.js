@@ -25,6 +25,7 @@
       `;
     } else if (font === 'belle-allure') {
       fontStyleEl.textContent = `
+        @font-face { font-family: 'Belle Allure'; src: url('${browser.runtime.getURL("fonts/BelleAllureCE-Gros.otf")}') format('opentype'); }
         body.jcolore-active, body.jcolore-active * { font-family: 'Belle Allure', cursive !important; }
       `;
     } else {
